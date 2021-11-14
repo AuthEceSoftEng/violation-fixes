@@ -10,7 +10,7 @@ from properties import github_token, max_deleted_lines_per_file, max_added_lines
     
 
 # store_file method
-def store_file(filepath, content):
+def store_file(filepath, content_in_bytes):
     ''' Method that allows storing certain content to a file
     with given path. If the file and its path don't exit, this method 
     creates them.
@@ -20,8 +20,8 @@ def store_file(filepath, content):
     
     '''
     os.makedirs(os.path.dirname(filepath), exist_ok = True)
-    with open(filepath, "w", encoding = "UTF-8") as f:
-        f.write(content)
+    with open(filepath, "wb") as f:
+        f.write(content_in_bytes)
         
 
 column_names = ['Commit HashId', 'Rule', 'Rule set', 'beginLine', 'endLine', 'beginColumn',\
@@ -57,7 +57,7 @@ for query_text in queries:
     commits_parsed_ids = []
 
     ## Looping through results' pages
-    while ('next' in response.links.keys()) and pages_parsed < pages_limit_for_query :
+    while pages_parsed < pages_limit_for_query :
 
         commits = response.json()['items']
 
@@ -118,10 +118,10 @@ for query_text in queries:
                             before_file = requests.get(before_file_url, headers = headers)
                             after_file = requests.get(after_file_url, headers = headers)
 
-                            # Decoding the before and after files' content to readable form
+                            # Getting the content of before and after files' in bytes
                             try:
-                                before_file_content = (before_file.content).decode("utf-8")
-                                after_file_content =  (after_file.content).decode("utf-8")
+                                before_file_content = before_file.content
+                                after_file_content =  after_file.content
                             except:
                                 continue
 
@@ -190,18 +190,27 @@ for query_text in queries:
             else:
                 continue
 
-        # Getting next page of the results
-        request_url = response.links['next']['url']
-
-        # The response from Github's API
-        response = requests.get(request_url, headers = headers)
-
         pages_parsed += 1
+        
+        if 'next' in response.links.keys():
+            # Getting next page of the results
+            
+            request_url = response.links['next']['url']
+    
+            # The response from Github's API
+            response = requests.get(request_url, headers = headers)
+        else:
+            break
     
 #(possibly_Resolved_Violations.drop_duplicates()).to_csv("Resolved_violations.csv", index = False)
 possibly_Resolved_Violations_clean = possibly_Resolved_Violations.drop_duplicates(subset=[ 'Rule', 'Rule set', 'beginLine', 'endLine', 'beginColumn',\
                 'endColumn','Description'])
 
+# minor Bug, checking if /data folder exists.
+if not os.path.exists("../data"):
+    os.mkdir("../data")
+
+#Saving the resolved PMD violations
 possibly_Resolved_Violations_clean.to_csv("../data/Resolved_violations.csv", index = False)
 
 # Saving the frequencies of the rules on the resolved dataset.
