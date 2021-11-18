@@ -91,7 +91,9 @@ for query_text in queries:
                         except:
                             continue
 
-                        if( len(patch) > 0 ):
+                        # if( len(patch) > 0 ):
+                        # Skip files, where annotation for suppressing PMD's checks is added.
+                        if( len(patch) > 0 and not ("// NOPMD" in patch or "@SuppressWarnings(\"PMD" in patch) ):
                             parsed_patches = diff_parsed(patch)
                         else:
                             continue;

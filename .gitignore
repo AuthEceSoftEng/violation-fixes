@@ -1,1 +1,3 @@
 data/
+pmdFixesDownloader/properties.py
+pmdFixesDownloader/__pycache__/
