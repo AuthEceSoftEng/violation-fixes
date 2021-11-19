@@ -1,8 +1,51 @@
+import os
+
+# method to create search queries.
+def create_search_queries(searchMessages, yearsOfCommits):
+    ''' Method for creating commit search queries given the commit messages to 
+    be searched and the years they have been commited. Creating a query for each month 
+    of a year, allows the download of a big number of commits. This happens, due to 
+    the fact, that Github's API, limits the number of results of every query to 1000.
+    
+    param searchMessages: a list with the commit messages that are going to be searched
+    param yearsOfCommits: a list with the years the commits created
+    
+    '''    
+    months=[ "01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12" ]
+    queries = []
+    
+    for msg in searchMessages:
+        for year in yearsOfCommits:
+            for idx, month in  enumerate(months):
+                if month != "12":    
+                    queries.append(msg + "+committer-date:" + str(year) +"-"+ str(month) + "-01.." + \
+                        str(year) +"-" + str(months[idx+1]) + "-01")
+                elif month == "12":
+                    queries.append(msg + "+committer-date:" + str(year) +"-"+ str(month) + "-01.." + \
+                        str(year) +"-" + "12-31")
+                        
+    return queries                    
+
+# store_file method
+def store_file(filepath, content_in_bytes):
+    ''' Method that allows storing certain content to a file
+    with given path. If the file and its path don't exit, this method 
+    creates them.
+    
+    param filepath: the path of the file
+    param content: the content that will be stored in the file
+    
+    '''
+    os.makedirs(os.path.dirname(filepath), exist_ok = True)
+    with open(filepath, "wb") as f:
+        f.write(content_in_bytes)
+        
 
 '''
 methods for getting parsed commits' patches from commit's diffs. (START)
 Took it from pydriller's implementation of diff_parsed() method, from here:
 https://github.com/ishepard/pydriller/blob/master/pydriller/domain/commit.py
+repo: https://github.com/ishepard/pydriller
 '''
 from typing import List,  Dict, Tuple
 

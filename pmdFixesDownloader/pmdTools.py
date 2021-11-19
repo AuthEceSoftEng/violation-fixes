@@ -3,6 +3,16 @@ import os
 import json
 import collections
 
+#method for executing PMD 
+def execute_PMD(path_to_analyze, report_file_path, rules, reportFormat,nThreads):    
+    # Commands For Executing PMD
+    pmd_exec_command = "pmd.bat -d " + path_to_analyze + " -f " + reportFormat + " -R " + rules + \
+    " -reportfile "    + report_file_path + " -t " + str(nThreads)
+       
+    # Executing the Commands
+    os.system(pmd_exec_command)
+
+# method for converting PMD json reports to pandas Dataframes 
 def PMD_report_json_to_dataframe(commit, report_filepath, column_names):
     
     # The dataframe with the PMD's report data. It is returned by the function.
@@ -36,7 +46,7 @@ def PMD_report_json_to_dataframe(commit, report_filepath, column_names):
         return report_df
 
 
-
+# method for getting the pmd violations that existed on a before pmd report and dissapeared after
 def get_resolved_violations(df_before_report, df_after_report, lines_with_dels, lines_with_adds,  column_names):
     
     

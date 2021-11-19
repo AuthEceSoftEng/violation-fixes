@@ -2,28 +2,13 @@ import os
 import requests
 import pandas as pd
 import numpy as np
-from diffParser import diff_parsed
-from pmdReport import PMD_report_json_to_dataframe,get_resolved_violations, \
-    get_column_val_frequencies
+from helpers import diff_parsed, store_file, create_search_queries
+from pmdTools import PMD_report_json_to_dataframe,get_resolved_violations, \
+    get_column_val_frequencies, execute_PMD
 from properties import github_token, max_deleted_lines_per_file, max_added_lines_per_file, \
-    pages_limit_for_query, max_files_per_commit, results_per_page,  rulesets, queries
-    
-
-# store_file method
-def store_file(filepath, content_in_bytes):
-    ''' Method that allows storing certain content to a file
-    with given path. If the file and its path don't exit, this method 
-    creates them.
-    
-    param filepath: the path of the file
-    param content: the content that will be stored in the file
-    
-    '''
-    os.makedirs(os.path.dirname(filepath), exist_ok = True)
-    with open(filepath, "wb") as f:
-        f.write(content_in_bytes)
-        
-
+    pages_limit_for_query, max_files_per_commit, results_per_page,  rulesets, search_msgs, yearsToSearch
+     
+     
 column_names = ['Commit HashId', 'Rule', 'Rule set', 'beginLine', 'endLine', 'beginColumn',\
                 'endColumn','Description', 'Filename']
 
@@ -39,11 +24,25 @@ possibly_Resolved_Violations = pd.DataFrame(columns = column_names)
 df_before_report_full = pd.DataFrame(columns = column_names)  
 df_after_report_full = pd.DataFrame(columns = column_names) 
 
+# A list for storing the ids of all commits that our loop has parsed
+# It is used to avoid processing the same commit more than one time
+commits_parsed_ids = []
+
+queries = create_search_queries(search_msgs,yearsToSearch)
+
 # Looping through queries 
 for query_text in queries:
 
     # The complete Url corresponding to the request to Github API
     request_url = "https://api.github.com/search/commits?q=" + query_text + "&per_page=" + str(results_per_page)
+    
+    
+    # Checking our current search API status   
+    rate_limit_resp = requests.get("https://api.github.com/rate_limit", headers = headers)
+    
+    while(rate_limit_resp.json()['resources']['search']['remaining'] == 0):
+        rate_limit_resp = requests.get("https://api.github.com/rate_limit", headers = headers)
+
 
     # The response from Github's API
     response = requests.get(request_url, headers = headers)
@@ -51,10 +50,6 @@ for query_text in queries:
     # Variable indicating how many pages of the response are parsed.
     # Used
     pages_parsed = 0;
-
-    # A list for storing the ids of all commits that our loop has parsed
-    # It is used to avoid processing the same commit more than one time
-    commits_parsed_ids = []
 
     ## Looping through results' pages
     while pages_parsed < pages_limit_for_query :
@@ -129,33 +124,25 @@ for query_text in queries:
 
                             # Storing temporarily the before and after Files localy
                             # before
-                            before_file_path = "../data/commits/" + i['sha'] + "/files/before/" + i_file['filename']
+                            before_file_path = ("../data/commits/" + i['sha'] + "/files/before/" + i_file['filename']).replace(" ","_")
                             store_file(before_file_path, before_file_content)
 
                             # after
-                            after_file_path = "../data/commits/" + i['sha'] + "/files/after/" + i_file['filename']
-                            store_file(after_file_path, after_file_content)
+                            after_file_path = ("../data/commits/" + i['sha'] + "/files/after/" + i_file['filename']).replace(" ","_")
+                            store_file(after_file_path.replace(" ","_"), after_file_content)
 
                             ###########################################################################################
                             # Executing PMD.
                            
                             # Files where PMD results will be stored - Storing Results in JSON Format
                             pmd_report_before = "../data/commits/" + i['sha'] + "/reports/before/" + \
-                            ((i_file['filename']).replace("/","__")).replace(".java","_java") +".json"
+                            ((i_file['filename']).replace("/","__")).replace(".java","_java").replace(" ","_") +".json"
 
                             pmd_report_after = "../data/commits/" + i['sha'] + "/reports/after/" + \
-                            ((i_file['filename']).replace("/","__")).replace(".java","_java") +".json"
+                            ((i_file['filename']).replace("/","__")).replace(".java","_java").replace(" ","_") +".json"
                             
-                            # Commands For Executing PMD
-                            pmd_exec_command_before = "pmd.bat -d " + before_file_path + " -f json -R " + rulesets + \
-                            " -reportfile "    + pmd_report_before + " -t 2" 
-                            pmd_exec_command_after =  "pmd.bat -d " + after_file_path + " -f json -R " + rulesets + \
-                            " -reportfile "    + pmd_report_after + " -t 2" 
-
-                            # Executing the Commands
-                            os.system(pmd_exec_command_before)
-                            os.system(pmd_exec_command_after)
-
+                            execute_PMD(before_file_path, pmd_report_before, rulesets,"json",2)
+                            execute_PMD(after_file_path, pmd_report_after, rulesets,"json",2)
                             ###########################################################################################
                             # Storing The Results of PMD in desirable form.
                             # BEFORE COMMIT FILE REPORT             
@@ -172,7 +159,6 @@ for query_text in queries:
 
                             df_before_report_full = df_before_report_full.append(df_before_report, ignore_index = True)
                             df_after_report_full = df_after_report_full.append(df_after_report, ignore_index = True)
-                            
                             ###########################################################################################
                             # Getting only the fixed violations (violations that existed in before
                             # reports and disappeard in after reports)
@@ -188,15 +174,13 @@ for query_text in queries:
                                 possibly_Resolved_Violations = possibly_Resolved_Violations.append( \
                                                                 possibly_Resolved_Violations_this_file , ignore_index = True)
                             ###########################################################################################
-
             else:
                 continue
 
         pages_parsed += 1
         
         if 'next' in response.links.keys():
-            # Getting next page of the results
-            
+            # Getting next page of the results            
             request_url = response.links['next']['url']
     
             # The response from Github's API
@@ -219,4 +203,10 @@ possibly_Resolved_Violations_clean.to_csv("../data/Resolved_violations.csv", ind
 textfile = open("../data/resolved_rules_frequencies.txt", "w")
 for rule in get_column_val_frequencies(possibly_Resolved_Violations_clean, "Rule"):  
     textfile.write(str(rule[0]) + " --> " + str(rule[1]) + "\n")
+textfile.close()
+
+# Saving SHA ids of commits parsed on the programm.
+textfile = open("../data/commits_parsed.txt", "w")
+for commit in commits_parsed_ids:  
+    textfile.write(commit + "\n")
 textfile.close()
