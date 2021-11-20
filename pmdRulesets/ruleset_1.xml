@@ -1,0 +1,56 @@
+<?xml version="1.0"?>
+
+<ruleset name="Selected Rules for Automated Fix"
+    xmlns="http://pmd.sourceforge.net/ruleset/2.0.0"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://pmd.sourceforge.net/ruleset/2.0.0 https://pmd.sourceforge.io/ruleset_2_0_0.xsd">
+
+    <description>
+        These rules are selected, as they seem to be fixable and the automated resolution
+        of their bugs seems to be beneficial to the developers' community.
+    </description>
+    <!-- Your rules will come here -->
+    <rule ref="category/java/bestpractices.xml/AvoidPrintStackTrace" />
+    <rule ref="category/java/bestpractices.xml/AvoidReassigningParameters" />
+    <rule ref="category/java/bestpractices.xml/ForLoopCanBeForeach" />
+    <rule ref="category/java/bestpractices.xml/ForLoopVariableCount" />
+    <rule ref="category/java/bestpractices.xml/GuardLogStatement" />
+    <rule ref="category/java/bestpractices.xml/LiteralsFirstInComparisons" />
+    <rule ref="category/java/bestpractices.xml/LooseCoupling" />
+    <rule ref="category/java/bestpractices.xml/MethodReturnsInternalArray" /> <!--maybe out-->
+    <rule ref="category/java/bestpractices.xml/PreserveStackTrace" />
+    <rule ref="category/java/bestpractices.xml/SystemPrintln" />
+    <rule ref="category/java/bestpractices.xml/UnusedAssignment" />
+    <rule ref="category/java/bestpractices.xml/UnusedLocalVariable" />
+    <rule ref="category/java/bestpractices.xml/UseCollectionIsEmpty" />
+    <rule ref="category/java/bestpractices.xml/UseVarargs" /> <!-- MEDIUM low, maybe out -->
+    <rule ref="category/java/codestyle.xml/ControlStatementBraces" />
+    <rule ref="category/java/codestyle.xml/UnnecessaryFullyQualifiedName" />
+    <rule ref="category/java/codestyle.xml/UnnecessaryImport" /> <!-- MEDIUM low, but good -->
+    <rule ref="category/java/codestyle.xml/UnnecessaryLocalBeforeReturn" />
+    <rule ref="category/java/codestyle.xml/UselessParentheses" /> <!-- MEDIUM low -->
+    <rule ref="category/java/design.xml/ClassWithOnlyPrivateConstructorsShouldBeFinal" />
+    <rule ref="category/java/design.xml/CollapsibleIfStatements" /> <!-- maybe out -->
+    <rule ref="category/java/design.xml/ImmutableField" />
+    <rule ref="category/java/errorprone.xml/AssignmentInOperand" />
+    <rule ref="category/java/errorprone.xml/AvoidCatchingNPE" />
+    <rule ref="category/java/errorprone.xml/AvoidLiteralsInIfCondition" />
+    <rule ref="category/java/errorprone.xml/CallSuperFirst" /> <!-- maybe out -->
+    <rule ref="category/java/errorprone.xml/CallSuperLast" /> <!-- maybe out -->
+    <rule ref="category/java/errorprone.xml/CloseResource" />
+    <rule ref="category/java/errorprone.xml/CompareObjectsWithEquals" />
+    <rule ref="category/java/errorprone.xml/ComparisonWithNaN" /> <!-- in, only if we found data -->
+    <rule ref="category/java/errorprone.xml/ConstructorCallsOverridableMethod" /> <!-- To see -->
+    <rule ref="category/java/errorprone.xml/EmptyIfStmt" />
+    <rule ref="category/java/errorprone.xml/EmptyStatementNotInLoop" />
+    <rule ref="category/java/errorprone.xml/EqualsNull" /><!-- HP, we will see-->
+    <rule ref="category/java/errorprone.xml/NullAssignment" /><!-- error prone, we will see--> 
+    <rule ref="category/java/errorprone.xml/UseEqualsToCompareStrings" /> <!-- we need Data--> 
+    <rule ref="category/java/performance.xml/AddEmptyString" /> <!-- maybe out, we will see--> 
+    <rule ref="category/java/performance.xml/AppendCharacterWithChar" />
+    <rule ref="category/java/performance.xml/AvoidFileStream" /> <!-- HP -->
+    <rule ref="category/java/performance.xml/ConsecutiveAppendsShouldReuse" />
+    <rule ref="category/java/performance.xml/InefficientStringBuffering" /> <!-- we need data -->
+    <rule ref="category/java/performance.xml/UseIndexOfChar" /> <!-- maybe out -->
+    <rule ref="category/java/performance.xml/UselessStringValueOf" /> <!-- maybe out -->
+</ruleset>

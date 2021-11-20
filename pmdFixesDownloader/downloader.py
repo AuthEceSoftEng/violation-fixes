@@ -1,14 +1,13 @@
 import os
 import requests
 import pandas as pd
-import numpy as np
 from helpers import diff_parsed, store_file, create_search_queries
 from pmdTools import PMD_report_json_to_dataframe,get_resolved_violations, \
     get_column_val_frequencies, execute_PMD
 from properties import github_token, max_deleted_lines_per_file, max_added_lines_per_file, \
     pages_limit_for_query, max_files_per_commit, results_per_page,  rulesets, search_msgs, yearsToSearch
      
-     
+    
 column_names = ['Commit HashId', 'Rule', 'Rule set', 'beginLine', 'endLine', 'beginColumn',\
                 'endColumn','Description', 'Filename']
 
@@ -29,6 +28,7 @@ df_after_report_full = pd.DataFrame(columns = column_names)
 commits_parsed_ids = []
 
 queries = create_search_queries(search_msgs,yearsToSearch)
+# queries = search_msgs
 
 # Looping through queries 
 for query_text in queries:
@@ -187,7 +187,8 @@ for query_text in queries:
             response = requests.get(request_url, headers = headers)
         else:
             break
-    
+
+# Saving the exported data into files properly
 #(possibly_Resolved_Violations.drop_duplicates()).to_csv("Resolved_violations.csv", index = False)
 possibly_Resolved_Violations_clean = possibly_Resolved_Violations.drop_duplicates(subset=[ 'Rule', 'Rule set', 'beginLine', 'endLine', 'beginColumn',\
                 'endColumn','Description'])

@@ -17,17 +17,19 @@ results_per_page = 100
 #max results per query on GH API  = 1000 - (max actual (pages* results_per_page) == 1000)
 pages_limit_for_query = 10
 
-rulesets = "category/java/errorprone.xml,category/java/security.xml,category/java/bestpractices.xml,category/java/documentation.xml,category/java/performance.xml,category/java/multithreading.xml,category/java/codestyle.xml,category/java/design.xml"
-#ALL RULESETS#"category/java/errorprone.xml,category/java/security.xml,category/java/bestpractices.xml,category/java/documentation.xml,category/java/performance.xml,category/java/multithreading.xml,category/java/codestyle.xml,category/java/design.xml"  
-
+rulesets = "../pmdRulesets/ruleset_1.xml"
+#ALL RULESETS: "category/java/errorprone.xml,category/java/security.xml,category/java/bestpractices.xml,category/java/documentation.xml,category/java/performance.xml,category/java/multithreading.xml,category/java/codestyle.xml,category/java/design.xml"  
+#rulesets =  "category/java/errorprone.xml,category/java/security.xml,category/java/bestpractices.xml,category/java/documentation.xml,category/java/performance.xml,category/java/multithreading.xml,category/java/codestyle.xml,category/java/design.xml"
 
 # query_text = "PMD violations Fixes"
 
 
 
 # The messages of the commits we want to query on Github's Search API. 
-search_msgs = ["PMD+violation+fix", "PMD+warning+fix", "PMD+error+fix", "PMD+bug+fix", \
-            "PMD+rule+fix", "PMD+resolve", "PMD+refactor", "PMD+fix","java+static+analysis+fix" ]
+# search_msgs = ["PMD+violation+fix", "PMD+warning+fix", "PMD+error+fix", "PMD+bug+fix", \
+#             "PMD+rule+fix", "PMD+resolve", "PMD+refactor", "PMD+fix","java+static+analysis+fix" ]
+    
+search_msgs = ["PMD+error+fix", "PMD+warning+fix"]
 
 # The Years when the commits to search, has been commited
-yearsToSearch = ["2020","2021"]
+yearsToSearch = ["2016","2017"]
