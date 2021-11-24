@@ -37,7 +37,7 @@ def PMD_report_json_to_dataframe(commit, report_filepath, column_names):
         # Looping through files of the report (if PMD analyzed one file, it)
         for index, file in data_to_df.iterrows():
             for violation in file['violations']:
-                temp_df = pd.DataFrame([[commit['sha'], violation['rule'], violation['ruleset'],violation['beginline'],\
+                temp_df = pd.DataFrame([[commit['html_url'],commit['sha'], violation['rule'], violation['ruleset'],violation['beginline'],\
                                         violation['endline'],violation['begincolumn'],violation['endcolumn'], \
                                         violation['description'], os.path.relpath(file['filename']) ]] , columns = column_names)      
                 report_df = report_df.append(temp_df, ignore_index = True)
@@ -47,7 +47,19 @@ def PMD_report_json_to_dataframe(commit, report_filepath, column_names):
 
 
 # method for getting the pmd violations that existed on a before pmd report and dissapeared after
-def get_resolved_violations(df_before_report, df_after_report, lines_with_dels, lines_with_adds,  column_names):
+def get_resolved_violations(df_before_report, df_after_report, deleted_lines, added_lines,  column_names, file_patch):
+
+
+
+    lines_with_adds = []
+
+    lines_with_dels = []
+
+    for i_line in range(len(added_lines)):
+        lines_with_adds.append(added_lines[i_line][0])
+
+    for i_line in range(len(deleted_lines)):
+        lines_with_dels.append(deleted_lines[i_line][0])
     
     
     # Data-frame, where current possible resolved issues will be stored
@@ -65,7 +77,7 @@ def get_resolved_violations(df_before_report, df_after_report, lines_with_dels, 
     
     #Looping through violations
     while(i_before_df < len(df_before_report) and i_after_df < len(df_after_report) ):
-    
+                
         # Checking the number of added lines up to current beginline of violation, in order to balance the after offset 
         while(i_lines_w_adds < len(lines_with_adds) and i_after_df < len(df_after_report) and \
             df_after_report.iloc[i_after_df]['beginLine'] >= lines_with_adds[i_lines_w_adds] and \
@@ -99,9 +111,10 @@ def get_resolved_violations(df_before_report, df_after_report, lines_with_dels, 
     
         # Possible Fix
         elif (df_before_report.iloc[i_before_df]['beginLine'] - beforeOffset \
-               <=  df_after_report.iloc[i_after_df]['beginLine'] - afterOffset):  
-            current_possibly_Resolved_Violations = current_possibly_Resolved_Violations.append( \
-                                        df_before_report.iloc[i_before_df] , ignore_index = True)
+               <=  df_after_report.iloc[i_after_df]['beginLine'] - afterOffset): 
+            resolved_row =  (df_before_report.iloc[i_before_df]).append(pd.Series(data= file_patch, index=['filePatch'])) 
+            current_possibly_Resolved_Violations = current_possibly_Resolved_Violations.append( resolved_row, ignore_index = True)                                     
+                                         
             i_before_df +=1;    
             
     return current_possibly_Resolved_Violations

@@ -1,15 +1,20 @@
 import os
 import requests
 import pandas as pd
+import time
 from helpers import diff_parsed, store_file, create_search_queries
 from pmdTools import PMD_report_json_to_dataframe,get_resolved_violations, \
     get_column_val_frequencies, execute_PMD
 from properties import github_token, max_deleted_lines_per_file, max_added_lines_per_file, \
-    pages_limit_for_query, max_files_per_commit, results_per_page,  rulesets, search_msgs, yearsToSearch
+    pages_limit_for_query, max_files_per_commit, results_per_page,  rulesets, search_msgs, yearsToSearch,\
+        rules
      
-    
-column_names = ['Commit HashId', 'Rule', 'Rule set', 'beginLine', 'endLine', 'beginColumn',\
+
+column_names = ['Commit url','Commit HashId', 'Rule', 'Rule set', 'beginLine', 'endLine', 'beginColumn',\
                 'endColumn','Description', 'Filename']
+column_names_res = ['Commit url','Commit HashId', 'Rule', 'Rule set', 'beginLine', 'endLine', 'beginColumn',\
+                'endColumn','Description', 'Filename','filePatch']
+
 
 # The Headers of our Request
 headers = {'Authorization': 'token ' + github_token, \
@@ -17,7 +22,7 @@ headers = {'Authorization': 'token ' + github_token, \
 
 
 # Data-frame, where data of possible resolved issues will be stored
-possibly_Resolved_Violations = pd.DataFrame(columns = column_names) 
+possibly_Resolved_Violations = pd.DataFrame(columns = column_names_res) 
 
 # Data-frame, where data of all before and after versions of commits will be stored - MAYBE WE DO NOT NEED IT
 df_before_report_full = pd.DataFrame(columns = column_names)  
@@ -27,7 +32,7 @@ df_after_report_full = pd.DataFrame(columns = column_names)
 # It is used to avoid processing the same commit more than one time
 commits_parsed_ids = []
 
-queries = create_search_queries(search_msgs,yearsToSearch)
+queries = create_search_queries(search_msgs,yearsToSearch,rules)
 # queries = search_msgs
 
 # Looping through queries 
@@ -41,7 +46,9 @@ for query_text in queries:
     rate_limit_resp = requests.get("https://api.github.com/rate_limit", headers = headers)
     
     while(rate_limit_resp.json()['resources']['search']['remaining'] == 0):
+        time.sleep(1)
         rate_limit_resp = requests.get("https://api.github.com/rate_limit", headers = headers)
+        
 
 
     # The response from Github's API
@@ -53,6 +60,13 @@ for query_text in queries:
 
     ## Looping through results' pages
     while pages_parsed < pages_limit_for_query :
+
+        # In this case we have exceeded a secondary rate limit of GH API.
+        while not ('items' in response.json().keys()):
+            # Sleep to avoi rate limit
+            time.sleep(10)
+            # The response from Gitehub's API
+            response = requests.get(request_url, headers = headers)
 
         commits = response.json()['items']
 
@@ -88,7 +102,7 @@ for query_text in queries:
 
                         # if( len(patch) > 0 ):
                         # Skip files, where annotation for suppressing PMD's checks is added.
-                        if( len(patch) > 0 and not ("// NOPMD" in patch or "@SuppressWarnings(\"PMD" in patch) ):
+                        if( len(patch) > 0 and not ( ("// NOPMD" in patch) or ("@SuppressWarnings(\"PMD" in patch) or ("@SuppressWarnings({\"PMD" in patch)) ):
                             parsed_patches = diff_parsed(patch)
                         else:
                             continue;
@@ -97,15 +111,6 @@ for query_text in queries:
                         added_lines = parsed_patches['added']
                         deleted_lines = parsed_patches['deleted']
 
-                        lines_with_adds = []
-
-                        lines_with_dels = []
-
-                        for i_line in range(len(added_lines)):
-                            lines_with_adds.append(added_lines[i_line][0])
-
-                        for i_line in range(len(deleted_lines)):
-                            lines_with_dels.append(deleted_lines[i_line][0])
                         ###############################################################################################
                         # Filtering the files by the number of lines addedd or deleted.
                         if(len(added_lines) <= max_added_lines_per_file and len(deleted_lines) <= max_deleted_lines_per_file):
@@ -132,8 +137,7 @@ for query_text in queries:
                             store_file(after_file_path.replace(" ","_"), after_file_content)
 
                             ###########################################################################################
-                            # Executing PMD.
-                           
+                            # Executing PMD.                           
                             # Files where PMD results will be stored - Storing Results in JSON Format
                             pmd_report_before = "../data/commits/" + i['sha'] + "/reports/before/" + \
                             ((i_file['filename']).replace("/","__")).replace(".java","_java").replace(" ","_") +".json"
@@ -141,8 +145,9 @@ for query_text in queries:
                             pmd_report_after = "../data/commits/" + i['sha'] + "/reports/after/" + \
                             ((i_file['filename']).replace("/","__")).replace(".java","_java").replace(" ","_") +".json"
                             
-                            execute_PMD(before_file_path, pmd_report_before, rulesets,"json",2)
-                            execute_PMD(after_file_path, pmd_report_after, rulesets,"json",2)
+                            execute_PMD(before_file_path, pmd_report_before, rulesets,"json",1)
+                            execute_PMD(after_file_path, pmd_report_after, rulesets,"json",1)
+
                             ###########################################################################################
                             # Storing The Results of PMD in desirable form.
                             # BEFORE COMMIT FILE REPORT             
@@ -165,7 +170,7 @@ for query_text in queries:
                             print("OK")
                             # Data-frame, where data of possible resolved issues of this file will be stored
                             possibly_Resolved_Violations_this_file = get_resolved_violations(df_before_report, \
-                                                    df_after_report, lines_with_dels, lines_with_adds,  column_names)
+                                                    df_after_report, deleted_lines, added_lines,  column_names_res, patch)
     
                                          
                             # Adding the resolved violations of the file examined, to the dataset of all resolved violations
@@ -187,7 +192,7 @@ for query_text in queries:
             response = requests.get(request_url, headers = headers)
         else:
             break
-
+########################## Storing Data Properly ##########################
 # Saving the exported data into files properly
 #(possibly_Resolved_Violations.drop_duplicates()).to_csv("Resolved_violations.csv", index = False)
 possibly_Resolved_Violations_clean = possibly_Resolved_Violations.drop_duplicates(subset=[ 'Rule', 'Rule set', 'beginLine', 'endLine', 'beginColumn',\

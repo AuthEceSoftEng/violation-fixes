@@ -1,7 +1,7 @@
 import os
 
 # method to create search queries.
-def create_search_queries(searchMessages, yearsOfCommits):
+def create_search_queries(searchMessages, yearsOfCommits,rules):
     ''' Method for creating commit search queries given the commit messages to 
     be searched and the years they have been commited. Creating a query for each month 
     of a year, allows the download of a big number of commits. This happens, due to 
@@ -13,6 +13,9 @@ def create_search_queries(searchMessages, yearsOfCommits):
     '''    
     months=[ "01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12" ]
     queries = []
+
+    for rule in rules:
+        queries.append(rule + " fix")
     
     for msg in searchMessages:
         for year in yearsOfCommits:
