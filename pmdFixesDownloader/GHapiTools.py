@@ -1,21 +1,39 @@
 import os
+import requests
 
-# method to create search queries.
+def check_ghapi_ratelimit_status(resourse, request_headers):
+    '''
+    Method for checking the current status of rate limit
+    of Github's API resource.
+
+    param resource : the resource, its rate limit is going to be checked
+    '''
+    # Checking our current search API rate limit status   
+    rate_limit_resp = requests.get("https://api.github.com/rate_limit", headers = request_headers)
+    
+    while(rate_limit_resp.json()['resources'][resourse]['remaining'] == 0):
+        time.sleep(1)
+        rate_limit_resp = requests.get("https://api.github.com/rate_limit", headers = request_headers)  
+
+# function to create search queries.
 def create_search_queries(searchMessages, yearsOfCommits,rules):
-    ''' Method for creating commit search queries given the commit messages to 
-    be searched and the years they have been commited. Creating a query for each month 
+    ''' Creates commit search queries given the commit messages to 
+    be searched and the years they have been commited. Creates a query for each month 
     of a year, allows the download of a big number of commits. This happens, due to 
     the fact, that Github's API, limits the number of results of every query to 1000.
-    
+   
     param searchMessages: a list with the commit messages that are going to be searched
     param yearsOfCommits: a list with the years the commits created
-    
+    param rules: a list of strings, of rules' names to create special queries
     '''    
     months=[ "01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12" ]
     queries = []
 
     for rule in rules:
-        queries.append(rule + " fix")
+        queries.append(rule + "+fix")
+
+    for rule in rules:
+        queries.append("PMD+" + rule )
     
     for msg in searchMessages:
         for year in yearsOfCommits:
@@ -29,11 +47,11 @@ def create_search_queries(searchMessages, yearsOfCommits,rules):
                         
     return queries                    
 
-# store_file method
+# store_file function
 def store_file(filepath, content_in_bytes):
-    ''' Method that allows storing certain content to a file
-    with given path. If the file and its path don't exit, this method 
-    creates them.
+    ''' Allows storing certain content to a file with given path.
+     If the file and its path don't exit, this method 
+    creates it.
     
     param filepath: the path of the file
     param content: the content that will be stored in the file
@@ -45,7 +63,7 @@ def store_file(filepath, content_in_bytes):
         
 
 '''
-methods for getting parsed commits' patches from commit's diffs. (START)
+Functions for getting parsed commits' patches from commit's diffs. (START)
 Took it from pydriller's implementation of diff_parsed() method, from here:
 https://github.com/ishepard/pydriller/blob/master/pydriller/domain/commit.py
 repo: https://github.com/ishepard/pydriller
@@ -103,3 +121,4 @@ def diff_parsed(patch) -> Dict[str, List[Tuple[int, str]]]:
 '''
 methods for getting parsed commits' patches from commit's diffs. (END)
 '''   
+

@@ -1,4 +1,5 @@
 data/
+data_arch/
 pmdFixesDownloader/properties.py
 pmdFixesDownloader/__pycache__/
 github_token.txt

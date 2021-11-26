@@ -2,26 +2,31 @@ import pandas as pd
 import os
 import json
 import collections
+from GHapiTools import diff_parsed
 
-#method for executing PMD 
-def execute_PMD(path_to_analyze, report_file_path, rules, reportFormat,nThreads):    
-    # Commands For Executing PMD
+
+def execute_PMD(path_to_analyze, report_file_path, rules, reportFormat,nThreads):
+    
+    # Command For Executing PMD
     pmd_exec_command = "pmd.bat -d " + path_to_analyze + " -f " + reportFormat + " -R " + rules + \
     " -reportfile "    + report_file_path + " -t " + str(nThreads)
        
-    # Executing the Commands
+    # Execute the Command
     os.system(pmd_exec_command)
 
-# method for converting PMD json reports to pandas Dataframes 
-def PMD_report_json_to_dataframe(commit, report_filepath, column_names):
-    
+# Convert PMD json reports to pandas Dataframes 
+def PMD_report_json_to_dataframe( report_filepath, column_names = ['Rule', 'Rule set', 'beginLine', 'endLine', 'beginColumn',\
+                'endColumn','Description', 'Filename']):
+    '''
+    Converts PMD json reports to pandas Dataframes. The dataframe is returned by the function. 
+    '''    
     # The dataframe with the PMD's report data. It is returned by the function.
     report_df = pd.DataFrame(columns = column_names)
     
-    # Checking if input json is empty 
+    # Check if input json is empty 
     if(os.path.isfile(report_filepath) and os.path.getsize(report_filepath) > 0):
         
-        # Opening JSON file, used UTF-8 encoding, as without it we had error
+        # Open JSON file, used ISO-8859-1 encoding, as without it an error occured.
         f = open(report_filepath, "r", encoding = "ISO-8859-1") 
 
         # returns JSON object as a dictionary
@@ -34,23 +39,29 @@ def PMD_report_json_to_dataframe(commit, report_filepath, column_names):
         # Create a DataFrame from the imported Data
         data_to_df = pd.DataFrame(data["files"]); 
 
-        # Looping through files of the report (if PMD analyzed one file, it)
+        # Loop through files of the report and store data to dataframe
         for index, file in data_to_df.iterrows():
             for violation in file['violations']:
-                temp_df = pd.DataFrame([[commit['html_url'],commit['sha'], violation['rule'], violation['ruleset'],violation['beginline'],\
+                temp_df = pd.DataFrame([[ violation['rule'], violation['ruleset'],violation['beginline'],\
                                         violation['endline'],violation['begincolumn'],violation['endcolumn'], \
                                         violation['description'], os.path.relpath(file['filename']) ]] , columns = column_names)      
                 report_df = report_df.append(temp_df, ignore_index = True)
         
-        # Returning the dataframe with the report's data.
+        # Return the dataframe with the report's data.
         return report_df
 
 
 # method for getting the pmd violations that existed on a before pmd report and dissapeared after
-def get_resolved_violations(df_before_report, df_after_report, deleted_lines, added_lines,  column_names, file_patch):
+def get_resolved_violations(df_before_report, df_after_report, column_names, file_patch):
+
+    # Get a parsed diff version of the files' patch, as it is needed for analysis bellow.
+    parsed_patch = diff_parsed(file_patch)
 
 
-
+    # Getting more detailed information about the patch
+    added_lines = parsed_patch['added']
+    deleted_lines = parsed_patch['deleted']
+    
     lines_with_adds = []
 
     lines_with_dels = []
@@ -65,34 +76,36 @@ def get_resolved_violations(df_before_report, df_after_report, deleted_lines, ad
     # Data-frame, where current possible resolved issues will be stored
     current_possibly_Resolved_Violations = pd.DataFrame(columns = column_names)
     
-    i_before_df = 0;
-    i_after_df = 0;
+    # Indexes for df_before_report and df_after_report dataframe
+    i_before_df = 0
+    i_after_df = 0
     
-    i_lines_w_adds = 0;
-    i_lines_w_dels = 0;
+    # Indexes for line_with_adds and line_with_dels lists
+    i_lines_w_adds = 0
+    i_lines_w_dels = 0
     
-    # offsets, that it's value is configured based on the additions and deletions.
-    beforeOffset = 0;
+    # offsets, that its value is configured based on the additions and deletions.
+    beforeOffset = 0
     afterOffset = 0; 
     
-    #Looping through violations
+    #Loop through violations
     while(i_before_df < len(df_before_report) and i_after_df < len(df_after_report) ):
                 
-        # Checking the number of added lines up to current beginline of violation, in order to balance the after offset 
+        # Check the number of added lines up to current beginline of violation, in order to balance the after offset 
         while(i_lines_w_adds < len(lines_with_adds) and i_after_df < len(df_after_report) and \
             df_after_report.iloc[i_after_df]['beginLine'] >= lines_with_adds[i_lines_w_adds] and \
             ( df_after_report.iloc[i_after_df -1]['beginLine'] < lines_with_adds[i_lines_w_adds] or\
              i_after_df == 0)):
-            i_lines_w_adds += 1;
-            afterOffset +=1;
+            i_lines_w_adds += 1
+            afterOffset +=1
     
-        # Checking the number of added lines up to current beginline of violation, in order to balance the before offset
+        # Check the number of added lines up to current beginline of violation, in order to balance the before offset
         while(i_lines_w_dels < len(lines_with_dels) and i_before_df < len(df_before_report) and \
             df_before_report.iloc[i_before_df]['beginLine'] >= lines_with_dels[i_lines_w_dels] and \
             ( df_before_report.iloc[i_before_df -1]['beginLine'] < lines_with_dels[i_lines_w_dels] or\
              i_before_df == 0)):
-            i_lines_w_dels += 1;
-            beforeOffset +=1;
+            i_lines_w_dels += 1
+            beforeOffset +=1
     
     
         # Common Violations on before and after file
@@ -120,6 +133,10 @@ def get_resolved_violations(df_before_report, df_after_report, deleted_lines, ad
     return current_possibly_Resolved_Violations
 
 def get_column_val_frequencies(df, colname):
+    '''
+    Returns the absolute frequency of values of column with colname
+    of the df dataframe.
+    '''
     
     Resolved_Rules = df.iloc[:][colname]
     Resolved_Rules_counter = collections.Counter(Resolved_Rules)
