@@ -2,13 +2,17 @@ import pandas as pd
 import os
 import json
 import collections
+import xml.etree.ElementTree as ET
 from GHapiTools import diff_parsed
 
 
 def execute_PMD(path_to_analyze, report_file_path, rules, reportFormat,nThreads):
-    
+
+    # Create folder to store the report
+    os.makedirs(os.path.dirname(report_file_path), exist_ok = True)
+
     # Command For Executing PMD
-    pmd_exec_command = "pmd.bat -d " + path_to_analyze + " -f " + reportFormat + " -R " + rules + \
+    pmd_exec_command = "pmd -d " + path_to_analyze + " -f " + reportFormat + " -R " + rules + \
     " -reportfile "    + report_file_path + " -t " + str(nThreads)
        
     # Execute the Command
@@ -50,6 +54,55 @@ def PMD_report_json_to_dataframe( report_filepath, column_names = ['Rule', 'Rule
         # Return the dataframe with the report's data.
         return report_df
 
+
+# Convert PMD json reports to pandas Dataframes 
+def PMD_report_XML_to_dataframe( report_filepath, column_names = ['Rule', 'Rule set', 'beginLine', 'endLine', 'beginColumn',\
+                'endColumn', 'package', 'class', 'method', 'variable', 'Description', 'Filename']):
+    '''
+    Converts PMD XML reports to pandas Dataframes. The dataframe is returned by the function. 
+    '''    
+    # The dataframe with the PMD's report data. It is returned by the function.
+    report_df = pd.DataFrame(columns = column_names)
+    #'src__main__java__org__perfectable__artifactable__ArtifactIdentifier_java.xml'
+    mytree = ET.parse(report_filepath)
+
+    root = mytree.getroot()
+
+    for child in root:
+
+        # Check if current node represents a file
+        if (child.tag).endswith("file"):
+
+            filename = child.attrib['name']
+
+            for violation in child:
+                # Check if current node represents a violation
+                if (violation.tag).endswith("violation"):
+                    
+                    # Check if current violation is part of a certain method
+                    if 'method' in violation.attrib:
+                        curr_violation_method = violation.attrib['method']
+                    else:
+                        curr_violation_method = ""     
+
+                    # Check if current violation is spotted on a certain variables
+                    if 'variable' in violation.attrib:
+                        curr_violation_variable = violation.attrib['variable']
+                    else:
+                        curr_violation_variable = "" 
+
+                    # Check if current violation is spotted on a certain package
+                    if 'package' in violation.attrib:
+                        curr_violation_package = violation.attrib['package']
+                    else:
+                        curr_violation_package = "" 
+                        
+                    temp_df = pd.DataFrame([[ violation.attrib['rule'], violation.attrib['ruleset'], int(violation.attrib['beginline']),\
+                                            int(violation.attrib['endline']), int(violation.attrib['begincolumn']), int(violation.attrib['endcolumn']), \
+                                            curr_violation_package, violation.attrib['class'], curr_violation_method,\
+                                            curr_violation_variable, ((violation.text).strip('\n')).strip('\t'), os.path.relpath(filename) ]] , columns = column_names) 
+                    report_df = report_df.append(temp_df, ignore_index = True)                    
+    return report_df
 
 # method for getting the pmd violations that existed on a before pmd report and dissapeared after
 def get_resolved_violations(df_before_report, df_after_report, column_names, file_patch):

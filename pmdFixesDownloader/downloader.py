@@ -3,7 +3,7 @@ import requests
 import pandas as pd
 import time
 from GHapiTools import diff_parsed, store_file, create_search_queries, check_ghapi_ratelimit_status
-from pmdTools import PMD_report_json_to_dataframe, get_resolved_violations, \
+from pmdTools import PMD_report_json_to_dataframe, PMD_report_XML_to_dataframe, get_resolved_violations, \
     get_column_val_frequencies, execute_PMD
 from properties import github_token, path_to_commits_data, path_to_results_stats
 
@@ -159,12 +159,21 @@ def download_commits_files(github_token, path_to_commits_data, path_to_results, 
 #  Method to get the resolved PMD violations of a commit_files_df
 def commits_files_PMD_resolved_violations(commit_files_df, pmd_report_format, rulesets, path_to_commits_data, path_to_results):
 
-    column_names_res = ['Commit url','Commit HashId', 'Rule', 'Rule set', 'beginLine', 'endLine', 'beginColumn',\
+    if pmd_report_format == "xml":
+
+        column_names_res = ['Commit url','Commit HashId', 'Rule', 'Rule set', 'beginLine', 'endLine', 'beginColumn',\
+                    'endColumn', 'package', 'class', 'method', 'variable', 'Description', 'Filename','filePatch']
+
+        column_names = ['Rule', 'Rule set', 'beginLine', 'endLine', 'beginColumn',\
+                    'endColumn', 'package', 'class', 'method', 'variable', 'Description', 'Filename']
+
+    elif pmd_report_format == "json":
+
+        column_names_res = ['Commit url','Commit HashId', 'Rule', 'Rule set', 'beginLine', 'endLine', 'beginColumn',\
                 'endColumn','Description', 'Filename','filePatch']
 
-    column_names = ['Rule', 'Rule set', 'beginLine', 'endLine', 'beginColumn',\
+        column_names = ['Rule', 'Rule set', 'beginLine', 'endLine', 'beginColumn',\
                 'endColumn','Description', 'Filename']
-
 
     # Data-frame, where data of possible resolved issues will be stored
     possibly_Resolved_Violations = pd.DataFrame(columns = column_names_res) 
@@ -184,8 +193,11 @@ def commits_files_PMD_resolved_violations(commit_files_df, pmd_report_format, ru
         execute_PMD(row['afterFile'], pmd_report_after, rulesets, pmd_report_format,1)
         
         #### Store The Results of PMD in desirable form. #####
-        # BEFORE COMMIT FILE REPORT             
-        df_temp = PMD_report_json_to_dataframe(pmd_report_before)
+        # BEFORE COMMIT FILE REPORT
+        if pmd_report_format == "xml":             
+            df_temp = PMD_report_XML_to_dataframe(pmd_report_before)
+        elif pmd_report_format == "json":
+            df_temp = PMD_report_json_to_dataframe(pmd_report_before)
         df_temp.insert(0, "Commit url", row["Commit url"])
         df_temp.insert(1, "Commit HashId", row["Commit HashId"])
         df_before_report = df_temp
@@ -194,7 +206,10 @@ def commits_files_PMD_resolved_violations(commit_files_df, pmd_report_format, ru
             continue                 
 
         # AFTER COMMIT FILE REPORT
-        df_temp = PMD_report_json_to_dataframe(pmd_report_after)
+        if pmd_report_format == "xml":             
+            df_temp = PMD_report_XML_to_dataframe(pmd_report_after)
+        elif pmd_report_format == "json":
+            df_temp = PMD_report_json_to_dataframe(pmd_report_after)
         df_temp.insert(0, "Commit url", row["Commit url"])
         df_temp.insert(1, "Commit HashId", row["Commit HashId"])
         df_after_report = df_temp
@@ -244,8 +259,8 @@ if __name__ == "__main__":
     results_per_page = 100
 
     # The number of pages to parse for each query.
-    #max results per query on GH API  = 1000 - (max actual (pages* results_per_page) == 1000)
-    pages_limit_for_query = 10
+    # # max results per query on GH API  = 1000 - (max actual (pages* results_per_page) == 1000)
+    pages_limit_for_query = 5
 
     rulesets = "../pmdRulesets/ruleset_1.xml"
     rules =     ["AvoidPrintStackTrace" , "AvoidReassigningParameters" , "ForLoopCanBeForeach" , "ForLoopVariableCount" ,\
@@ -278,6 +293,7 @@ if __name__ == "__main__":
     commits_files = download_commits_files(github_token, path_to_commits_data, path_to_results_stats,\
          search_msgs, yearsToSearch, rules, max_deleted_lines_per_file, max_added_lines_per_file, pages_limit_for_query, \
          max_files_per_commit, results_per_page)
+    
 
-    report_format = "json"
+    report_format = "xml"
     df = commits_files_PMD_resolved_violations(commits_files, report_format, rulesets, path_to_commits_data, path_to_results_stats)
