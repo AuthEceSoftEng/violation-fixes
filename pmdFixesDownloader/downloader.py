@@ -213,8 +213,7 @@ def commits_files_PMD_resolved_violations(commit_files_df, pmd_report_format, ru
         df_temp.insert(0, "Commit url", row["Commit url"])
         df_temp.insert(1, "Commit HashId", row["Commit HashId"])
         df_after_report = df_temp
-        if df_after_report.empty:
-            continue
+        
 
         #### Get only the fixed violations (violations that existed in before
         # reports and disappeard in after reports) ####

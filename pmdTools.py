@@ -48,7 +48,7 @@ def PMD_report_json_to_dataframe( report_filepath, column_names = ['Rule', 'Rule
             for violation in file['violations']:
                 temp_df = pd.DataFrame([[ violation['rule'], violation['ruleset'],violation['beginline'],\
                                         violation['endline'],violation['begincolumn'],violation['endcolumn'], \
-                                        violation['description'], os.path.relpath(file['filename']) ]] , columns = column_names)      
+                                        violation['description'], (os.path.relpath(file['filename'])).replace(os.sep,"/") ]] , columns = column_names)      
                 report_df = report_df.append(temp_df, ignore_index = True)
         
         # Return the dataframe with the report's data.
@@ -64,8 +64,10 @@ def PMD_report_XML_to_dataframe( report_filepath, column_names = ['Rule', 'Rule 
     # The dataframe with the PMD's report data. It is returned by the function.
     report_df = pd.DataFrame(columns = column_names)
     #'src__main__java__org__perfectable__artifactable__ArtifactIdentifier_java.xml'
-    mytree = ET.parse(report_filepath)
-
+    try:
+        mytree = ET.parse(report_filepath)
+    except:
+        return report_df
     root = mytree.getroot()
 
     for child in root:
@@ -96,11 +98,17 @@ def PMD_report_XML_to_dataframe( report_filepath, column_names = ['Rule', 'Rule 
                         curr_violation_package = violation.attrib['package']
                     else:
                         curr_violation_package = "" 
+
+                    # Check if current violation is spotted on a certain class
+                    if 'class' in violation.attrib:
+                        curr_violation_class = violation.attrib['class']
+                    else:
+                        curr_violation_class = "" 
                         
                     temp_df = pd.DataFrame([[ violation.attrib['rule'], violation.attrib['ruleset'], int(violation.attrib['beginline']),\
                                             int(violation.attrib['endline']), int(violation.attrib['begincolumn']), int(violation.attrib['endcolumn']), \
-                                            curr_violation_package, violation.attrib['class'], curr_violation_method,\
-                                            curr_violation_variable, ((violation.text).strip('\n')).strip('\t'), os.path.relpath(filename) ]] , columns = column_names) 
+                                            curr_violation_package, curr_violation_class, curr_violation_method,\
+                                            curr_violation_variable, ((violation.text).strip('\n')).strip('\t'), (os.path.relpath(filename)).replace(os.sep,"/") ]] , columns = column_names) 
                     report_df = report_df.append(temp_df, ignore_index = True)                    
     return report_df
 
