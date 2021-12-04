@@ -190,7 +190,14 @@ def get_resolved_violations(df_before_report, df_after_report, column_names, fil
             current_possibly_Resolved_Violations = current_possibly_Resolved_Violations.append( resolved_row, ignore_index = True)                                     
                                          
             i_before_df +=1;    
+
+    # Scan violations that possible are left at the end of before_report_df (resolved violation at the end of the codefile.)
+    while(i_before_df < len(df_before_report) and i_after_df >= len(df_after_report) ):
             
+            resolved_row =  (df_before_report.iloc[i_before_df]).append(pd.Series(data= file_patch, index=['filePatch'])) 
+            current_possibly_Resolved_Violations = current_possibly_Resolved_Violations.append( resolved_row, ignore_index = True)
+
+            i_before_df +=1;  
     return current_possibly_Resolved_Violations
 
 def get_column_val_frequencies(df, colname):
