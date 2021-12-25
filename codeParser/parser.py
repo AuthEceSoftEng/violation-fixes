@@ -1,8 +1,8 @@
 import pandas as pd
 import re
 from codeParseTools import store_string_to_file, get_lines_from_codefile, parse_and_store_lines_violation_detected,\
-    executeSrcML_code_to_srcml, executeGumtree
-
+    executeSrcML_code_to_srcml
+from gumtreeTools import  executeGumtree
 
 def parse_indexed_violations(indexed_violations_df, path_to_commits_data):
     ''' Parse the before and after code of the resolved Violations and creates their 
@@ -15,7 +15,7 @@ def parse_indexed_violations(indexed_violations_df, path_to_commits_data):
                         # NEW COLUMNS - for code Parsing
                             'violationLines', "violationLinesPath", "violationLinesSrcmlPath","fragmentBeforePatch" ,\
                                 "fragmentAfterPatch", "fragmentBeforePatchPath", "fragmentAfterPatchPath", "srcmlBeforePatchPath", "srcmlAfterPatchPath",\
-                                    "gumtreeUpdatePath"]
+                                    "gumtreeUpdatePath","gumtreeUpdatePath_txt"]
 
     # The dataframe where the parsed violations will be stored.
     parsed_df = pd.DataFrame(columns = column_names)
@@ -108,14 +108,18 @@ def parse_indexed_violations(indexed_violations_df, path_to_commits_data):
         ## Create and save the srcML before and after patch application, code fragments.
         executeSrcML_code_to_srcml(before_patch_code_fragment_filepath, before_patch_fragment_scrml_filepath)
         executeSrcML_code_to_srcml(after_patch_code_fragment_filepath, after_patch_fragment_scrml_filepath)
-        ##################### PARSE BEFORE AND AFTER PATCH CODE FRAGMENT (START) ######################
+        ##################### PARSE BEFORE AND AFTER PATCH CODE FRAGMENT (END) ######################
 
         # The path of the file where the update script between before and after code fragment of the patch will be stored.
-        gumtree_results_path = path_to_commits_data + violation['Commit HashId'] + "/gumtree/" + \
+        gumtree_results_json_path = path_to_commits_data + violation['Commit HashId'] + "/gumtree/" + \
             "violation_" + str(violation['Violation ID']) + "_gumtree_raw_update_script.json"
+
+        gumtree_results_text_path = path_to_commits_data + violation['Commit HashId'] + "/gumtree/" + \
+            "violation_" + str(violation['Violation ID']) + "_gumtree_raw_update_script.txt"
         # Get gumtree update scrippt for current violation
-        executeGumtree("textdiff", "java-srcml", "JSON", before_patch_code_fragment_filepath, after_patch_code_fragment_filepath, gumtree_results_path )
-    
+        executeGumtree("textdiff", "java-srcml", "JSON", before_patch_code_fragment_filepath, after_patch_code_fragment_filepath, gumtree_results_json_path )
+        executeGumtree("textdiff", "java-srcml", "TEXT", before_patch_code_fragment_filepath, after_patch_code_fragment_filepath, gumtree_results_text_path )
+
         # In case no before and after fragments are scanned, we skip current violation
         if before_patch_fragment == "" and after_patch_fragment == "":
             continue
@@ -126,11 +130,12 @@ def parse_indexed_violations(indexed_violations_df, path_to_commits_data):
                                             violation['method'], violation['variable'], violation['Description'], violation['Filename'], violation['filePatch'],\
                                             violationLines, violationLinesPath, violationLinesSrcmlPath, before_patch_fragment, after_patch_fragment ,\
                                                 before_patch_code_fragment_filepath, after_patch_code_fragment_filepath, before_patch_fragment_scrml_filepath, after_patch_fragment_scrml_filepath,\
-                                                    gumtree_results_path ]]\
+                                                    gumtree_results_json_path,gumtree_results_text_path ]]\
                                                 , columns = column_names) 
         
         parsed_df = parsed_df.append(temp_df, ignore_index = True)
     
     # update dataframe's index, in order to be the same with violation ID.
-    parsed_df.index += 1
+    parsed_df["ID"] = parsed_df["Violation ID"]
+    parsed_df.set_index('ID', inplace=True)
     return parsed_df

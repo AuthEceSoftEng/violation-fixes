@@ -1,5 +1,6 @@
 import os
 import requests
+import time
 
 def check_ghapi_ratelimit_status(resourse, request_headers):
     '''

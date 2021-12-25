@@ -67,7 +67,7 @@ def parse_and_store_lines_violation_detected(violation_df_row, linesOffest = 0, 
 
 def executeSrcML_code_to_srcml(input_file, output_file ):
 
-    command = "srcml " + input_file + " -o " + output_file + " -l Java --position"
+    command = "srcml " + input_file + " -o " + output_file + " -l Java"
 
     output_folder = os.path.dirname(output_file)
 
@@ -75,21 +75,6 @@ def executeSrcML_code_to_srcml(input_file, output_file ):
     os.makedirs(output_folder, exist_ok = True)
 
     # Executing srcml command
-    subprocess.Popen(command, shell=True).wait()
-
-def executeGumtree(gumtree_mode, tree_generator, output_format, code_file_1, code_file_2, output_file ):
-    
-    # Constructing gumtree execution command
-    command = "gumtree " + gumtree_mode + " -g "+ tree_generator + " -f "+ output_format + " " + code_file_1 +\
-         " " + code_file_2 + " -o " + output_file 
-
-    #Folder where output file will be stored.
-    output_folder = os.path.dirname(output_file)
-
-    # check if folder for output file exists, otherwise, it causes problem to gumtree.
-    os.makedirs(output_folder, exist_ok = True)
-
-    # Executing gumtree command
     subprocess.Popen(command, shell=True).wait()
 
 
