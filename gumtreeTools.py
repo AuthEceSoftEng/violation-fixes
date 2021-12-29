@@ -2,6 +2,7 @@ import os
 import re
 import json
 import subprocess
+import string
 
 def get_actions_from_gumtree_json_diff(parsed_viol_row):
     '''
@@ -69,7 +70,7 @@ def txt_gummtree_actions_tokenizer(txt_actions_list):
     
     # If the list of txt actions is empty, then we return a default list of tokens.
     if not txt_actions_list:
-        return ["no","action"]
+        return ["no-action"]
     
     for action in txt_actions_list:
 
@@ -102,9 +103,8 @@ def txt_gummtree_actions_tokenizer(txt_actions_list):
                     update_process_vector.append(word)
 
     if not txt_actions_list:
-        return ["no","action"]
+        return ["no-action"]
     return update_process_vector
-
 
 def executeGumtree(gumtree_mode, tree_generator, output_format, code_file_1, code_file_2, output_file ):
     
