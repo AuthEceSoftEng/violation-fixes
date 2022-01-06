@@ -1,5 +1,5 @@
 from pmdTools import get_column_val_frequencies
-from gumtreeTools import get_actions_from_gumtree_txt_diff, txt_gummtree_actions_tokenizer,txt_gummtree_actions_tokenizer_srcml_tokens
+from gumtreeTools import get_actions_from_gumtree_txt_diff, txt_gummtree_actions_tokenizer
 from sklearn.cluster import AgglomerativeClustering
 from sklearn.feature_extraction.text import TfidfVectorizer, CountVectorizer
 import re
@@ -97,7 +97,6 @@ def violations_df_gumtree_actions_tokenizer(parsed_violations_df, violation_ID_c
         gumtree_actions_tokens = gumtree_tokens_post_proces(gumtree_actions_tokens)
 
         update_scripts_tokens.append(gumtree_actions_tokens)
-        # update_scripts_tokens.append(txt_gummtree_actions_tokenizer_srcml_tokens(update_actions))
         violations_IDs.append(row[violation_ID_col])
 
     return update_scripts_tokens, violations_IDs

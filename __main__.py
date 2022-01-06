@@ -100,7 +100,7 @@ from sklearn.cluster import KMeans
 #sample_df = pd.read_csv(path_to_results_stats + "parsed_violations_clean.csv")
 sample_df = pd.read_csv("data/sample_df.csv")
 # Random repositiong of our sample
-sample_df = sample_df.sample(frac=1)
+# sample_df = sample_df.sample(frac=1)
 
 ## As we want general patterns to be extracted, only violation fixes of rules that appear more than 
 # a certain (minimum) frequency (minimum_rule_frequency), are held.
