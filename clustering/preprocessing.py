@@ -1,5 +1,10 @@
+'''
+Functions for Data Preprocessing & Preparation 
+Before Applying learning algorithms
+'''
+
 from pmdTools import get_column_val_frequencies
-from gumtreeTools import get_actions_from_gumtree_txt_diff, txt_gummtree_actions_tokenizer
+from gumtreeTools import get_actions_from_gumtree_txt_diff, txt_gummtree_actions_tokenizer, txt_gummtree_actions_tokenizer_srcml_tokens
 from sklearn.cluster import AgglomerativeClustering
 from sklearn.feature_extraction.text import TfidfVectorizer, CountVectorizer
 import re
@@ -9,7 +14,7 @@ from nltk.corpus import stopwords
 from nltk.stem import PorterStemmer
 from sklearn.metrics.pairwise import cosine_similarity
 
-########################### Functions for Data Preprocessing & Preparation (START) ###########################
+
 def delete_rows_based_on_col_frequency(df, column_name, minimun_frequency):
     '''
     Checks which values of column column_name, appears less times than a minimun
@@ -86,20 +91,25 @@ def violations_df_gumtree_actions_tokenizer(parsed_violations_df, violation_ID_c
     # violation with ID equals to violations_IDs[i]
     update_scripts_tokens = []
     violations_IDs = []
-
+    gumtree_actions_tokens_raw = []
 
     for row_index , row in parsed_violations_df.iterrows():
         
         update_actions = get_actions_from_gumtree_txt_diff(row)
 
-        gumtree_actions_tokens = txt_gummtree_actions_tokenizer(update_actions)
+        
 
-        gumtree_actions_tokens = gumtree_tokens_post_proces(gumtree_actions_tokens)
+        gumtree_actions_tokens = txt_gummtree_actions_tokenizer(update_actions)
+        # gumtree_actions_tokens = txt_gummtree_actions_tokenizer_srcml_tokens(update_actions)
+
+        gumtree_actions_tokens_raw.append(gumtree_actions_tokens)
+
+        # gumtree_actions_tokens = gumtree_tokens_post_proces(gumtree_actions_tokens)
 
         update_scripts_tokens.append(gumtree_actions_tokens)
         violations_IDs.append(row[violation_ID_col])
 
-    return update_scripts_tokens, violations_IDs
+    return update_scripts_tokens,gumtree_actions_tokens_raw, violations_IDs
 
 
 def tfidfVectorizer_for_tokenized_data(analyzer= 'word', max_df = 1.0, min_df = 1, max_features = None,\
@@ -155,6 +165,20 @@ def countVectorizer_tokenized_data(analyzer= 'word', max_df = 1.0, min_df = 1, m
 
     return vectorizer_model
 
+def distance_matrix_from_0_to_1_sim_matrix(similarity_matrix_0_1):
+
+    # Get Distance Matrix from similarity matrix
+    distance_matrix = 1 - similarity_matrix_0_1
+
+    # Some times 0 float numbers are equal to a very small negative float number, so
+    # we make these values equal to 0.
+    np.clip(distance_matrix, 0, 1, distance_matrix)
+
+    # make diagonal equal to real zeros
+    np.fill_diagonal(distance_matrix, 0)
+    
+    return distance_matrix
+
 def distance_matrix_from_tf_matrix(tf_matrix):
     '''
     Receives as input a tf-idf matrix and returns the corresponding distance matrix,
@@ -164,106 +188,50 @@ def distance_matrix_from_tf_matrix(tf_matrix):
     cosine_sim = cosine_similarity(tf_matrix, tf_matrix)
 
     # ### Clustering
-    distance_matrix = 1 - cosine_sim
-
-    # Some times 0 float numbers are equal to a very small negative float number, so
-
-    # we make these values equal to 0.
-    np.clip(distance_matrix, 0, 1, distance_matrix)
-
-    # make diagonal equal to real zeros
-    np.fill_diagonal(distance_matrix, 0)
+    distance_matrix = distance_matrix_from_0_to_1_sim_matrix(cosine_sim)
 
     return distance_matrix
-########################### Functions for Data Preprocessing & Preparation (END) #############################
 
-def agglomerative_hc_custom_dmatrix(distance_matrix, nclusters, linkage, computeFullTree, distanceThresshold):
-    '''
-    Applies aglomerative hierarchical clustering, on an input distance matrix.
-    '''
-    clustering_model = AgglomerativeClustering(n_clusters=nclusters, affinity="precomputed",\
-        linkage= linkage, compute_full_tree=computeFullTree, distance_threshold= distanceThresshold)
-
-    clustering_model.fit(distance_matrix)
-
-    return clustering_model
-  
-def kmeans_SSE_plot(input_X, min_clusters = 1, max_clusters = 8, step = 1,\
-     max_iter = 300, tol = 1e-04, init = 'k-means++', n_init = 10, algorithm = 'auto'):
-    '''
-    Executes kmeans for k from min_clusters to max_clusters with a certain step (step), and
-    plots the SSE (sum of squared errors / insertia) plot.
-    '''
-    import matplotlib.pyplot as plt
-    from sklearn.cluster import KMeans
-
-    import matplotlib.pyplot as plt
-    inertia_values = []
-
-    numbers_of_clusters = range(min_clusters, max_clusters+1,step)
-    
-    for i in numbers_of_clusters:
-        km = KMeans(n_clusters=i,  max_iter=max_iter,\
-            tol=tol, init=init, n_init=n_init, random_state=1, algorithm=algorithm)
-        km.fit(input_X)
-        inertia_values.append(km.inertia_)
-    
-    fig, ax = plt.subplots(figsize=(8, 6))
-    plt.plot(numbers_of_clusters, inertia_values, color='red')
-    plt.xlabel('No. of Clusters', fontsize=15)
-    plt.ylabel('SSE / Inertia', fontsize=15)
-    plt.title('SSE / Inertia vs No. Of Clusters', fontsize=15)
-    plt.grid()
-    plt.show()
+############ Functionality for computing longest common subsequence (START) ########
+# Function to find the length of the longest common subsequence of substring
+# `X[0…m-1]` and `Y[0…n-1]`
+def LCSLength(X, Y):
+ 
+    m = len(X)
+    n = len(Y)
+ 
+    # lookup table stores solution to already computed subproblems;
+    # i.e., `T[i][j]` stores the length of LCS of substring
+    # `X[0…i-1]` and `Y[0…j-1]`
+    T = [[0 for x in range(n + 1)] for y in range(m + 1)]
+ 
+    # fill the lookup table in a bottom-up manner
+    for i in range(1, m + 1):
+        for j in range(1, n + 1):
+            # if the current character of `X` and `Y` matches
+            if X[i - 1] == Y[j - 1]:
+                T[i][j] = T[i - 1][j - 1] + 1
+            # otherwise, if the current character of `X` and `Y` don't match
+            else:
+                T[i][j] = max(T[i - 1][j], T[i][j - 1])
+ 
+    # LCS will be the last entry in the lookup table
+    return T[m][n]
 
 
-def create_sub_dfs_from_clusters(initial_df, clustering_model):
-    '''
-    Receives as input the initial dataframe and the clustering model, and returns
-    a list (lets assume it as subdf_list) of dictionaries where:
+def lcs_similarities(vectors_of_action_tokens):
 
-    subdf_list[i]['df']: corresponds to the rows of initial_df that clustered to cluster i.
-    subdf_list[i]['rules-freq']: The rules' frequencies of the rows of the subdf_list[i]['df'] .
-    '''
+    LCS_similarities = np.zeros((len(vectors_of_action_tokens),len(vectors_of_action_tokens)) )
 
-    # A list of dictionaries where the sub-dataframes corresponding to each cluster will be stored
-    # clusters_dataframes[i]["df"], corresponds to the rows of initial_df, that clustered on i.
-    clusters_dataframes = []
+    for i in range(len(vectors_of_action_tokens)):
+        for j in range(i,len(vectors_of_action_tokens)):
 
-    # Loop through clusters
-    for cluster in range(0, clustering_model.n_clusters, 1):
-        
-        #The dataframe where the rows of current cluster will be stored.
-        curr_cluster_df = pd.DataFrame(columns=initial_df.columns)
+            seq_1 = vectors_of_action_tokens[i]
+            seq_2 = vectors_of_action_tokens[j]
+            
+            LCS_similarities[i,j] = (2 * LCSLength(seq_1, seq_2)  ) / (len(seq_1) + len(seq_2))
+            LCS_similarities[j,i] = LCS_similarities[i,j]
 
-        for row in np.where(clustering_model.labels_== cluster)[0]:          
-            curr_cluster_df = curr_cluster_df.append( initial_df.iloc[row])
-            # curr_cluster_df = curr_cluster_df.append( initial_df.iloc[row], ignore_index = True)
-
-        rules_freq_sub_df = get_column_val_frequencies(curr_cluster_df, "Rule")
-
-        curr_cluster_info = 	{
-		    'df' : curr_cluster_df,
-            'rules-freq': rules_freq_sub_df,
-	    }
-
-        clusters_dataframes.append(curr_cluster_info)
-    
-    return clusters_dataframes
-
-def print_cluster_rule_frequencies(cluster_info, clustering_model):
-    for cluster in range(clustering_model.n_clusters):
-        print("CLUSTER: " + str(cluster) +", frequencies:" )
-        for freq in cluster_info[cluster]['rules-freq']:
-            print(freq)
-        print("--------------------------------------")
-
-
-# # Check cluster's, input update script and rules.
-# # cluster = 2
-# # print("SIZE:")
-# # print(len(np.where(clustering_model.labels_== cluster)[0]))
-# # for i in np.where(clustering_model.labels_== cluster)[0]:
-# #     print(sample_df_up_vectors[i])
-# # for i in np.where(clustering_model.labels_== cluster)[0]:
-# #     print(sample_df.iloc[i]["Rule"])
+       
+    return LCS_similarities
+############ Functionality for computing longest common subsequence (END) ##########

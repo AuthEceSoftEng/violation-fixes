@@ -86,15 +86,18 @@ from gumtreeTools import get_actions_from_gumtree_txt_diff, txt_gummtree_actions
 #     "fragmentAfterPatch"],  keep = False)
 # # Store the dataset of clean (only one violation solvled per patch) parsed violations
 # clean_parsed_indexed_resolved_violations.to_csv(path_to_results_stats + "parsed_violations_clean.csv", index = False )
-# ############################################### Code Parsing (END) ####################################################
+# ############################################### Code Parsing (END) ####################################################       
 
-
-        
-############################################### Learning Phase (START) ################################################
-from learningTools import delete_rows_based_on_col_frequency, violations_df_gumtree_actions_tokenizer,\
-    tfidfVectorizer_for_tokenized_data, kmeans_SSE_plot, create_sub_dfs_from_clusters
+############################################### Learning Phase & Visualization (START) ################################################
+import pickle
+from clustering.preprocessing import delete_rows_based_on_col_frequency, violations_df_gumtree_actions_tokenizer, lcs_similarities,\
+    tfidfVectorizer_for_tokenized_data, countVectorizer_tokenized_data, distance_matrix_from_0_to_1_sim_matrix
+from clustering.kmeans import kmeans_SSE_plot
+from clustering.kmedoids import kmedoids_SSE_plot, distance_matrix_kmedoids_clustering
+from clustering.tools import create_sub_dfs_from_clusters, print_cluster_rule_frequencies
 from sklearn.cluster import KMeans
-
+from clustering.dbscan import DBSCAN_execution
+from clustering.visualize import mds_def_precomputed_execution, plot_2D_mds_array, plot_3D_mds_array, knns_distance_plot
 # # Save in order to examine
 # sample_df.to_csv("sample_df.csv")
 #sample_df = pd.read_csv(path_to_results_stats + "parsed_violations_clean.csv")
@@ -111,21 +114,53 @@ sample_df = delete_rows_based_on_col_frequency(sample_df, "Rule", minimum_rule_f
 # sample_df_up_vectors and sample_df_violations_IDs, are two parallel lists where 
 # sample_df_up_vectors[i] is the tokenized version of the update path of 
 # violation with ID equals to sample_df_violations_IDs[i]
-sample_df_up_vectors, sample_df_violations_IDs = violations_df_gumtree_actions_tokenizer(sample_df, 'Violation ID')
+sample_df_up_vectors, raw_up_vectors, sample_df_violations_IDs = violations_df_gumtree_actions_tokenizer(sample_df, 'Violation ID')
 
-## TF - IDF application to the tokenized update scripts
-# with min_df = 15, only tokens that appear in more than 15 documents
-tfidf_gumtree_diffs_model = tfidfVectorizer_for_tokenized_data(min_df = 15)
+# We use pickle as the calculation of the longest common subsequence is time consuming
+LCS_similarities = lcs_similarities(sample_df_up_vectors)
+# pickle.dump(LCS_similarities, open("pickles/LCS_similarity_matrix_java_srcml_tokens.picke", "wb"))
+# LCS_similarities = pickle.load(open("pickles/LCS_similarity_matrix_java_srcml_tokens.picke","rb"))
 
-tf_idf_gt_diffs_matrix = tfidf_gumtree_diffs_model.fit_transform(sample_df_up_vectors)
+distance_mat = distance_matrix_from_0_to_1_sim_matrix(LCS_similarities)
+# pickle.dump(distance_mat, open("pickles/LCS_distance_matrix_java_srcml_tokens.picke", "wb"))
+distance_mat = pickle.load(open("pickles/FULL_TOKENS/LCS_distance_matrix_FULL_tokens.picke","rb"))
 
-# # ploting k-means' SSE for different k values.
-# kmeans_SSE_plot(tf_idf_gt_diffs_matrix, min_clusters = 2, max_clusters = 500, step = 1)
+# Plot distance for the k-NN of each datapoint in ascending row.
+knns_distance_plot(distance_mat, k = 15, metric="precomputed", plot = True)
 
-# Apply k-means with selected K from the SSE plot above.
-clustering_model = KMeans(n_clusters=40, random_state=1)
-clustering_model.fit(tf_idf_gt_diffs_matrix)
 
-# Store sub-dataframes and rules frequencies for each cluster
+# 2D MDS Represantation of data 
+mds_model_2D = mds_def_precomputed_execution(distance_mat, n_dimensions = 2, random_state = 1,n_jobs=-1)
+# pickle.dump(mds_model_2D, open("pickles/MDS_2D_MDS_from_distance_matrix_JAVA_SRCMLtokens.pickle", "wb"))
+mds_model_2D = pickle.load(open("pickles/FULL_TOKENS/MDS_2D_MDS_from_distance_matrix_FULL_tokens.pickle","rb"))
+plot_2D_mds_array(mds_model_2D)
+
+# 3D MDS Represantation of data
+mds_model_3D = mds_def_precomputed_execution(distance_mat, n_dimensions = 3, random_state = 1,n_jobs=-1)
+# pickle.dump(mds_model_3D, open("pickles/MDS_3D_MDS_from_distance_matrix_JAVA_SRCMLtokens.pickle", "wb"))
+mds_model_3D = pickle.load(open("pickles/FULL_TOKENS/MDS_3D_MDS_from_distance_matrix_FULL_tokens.pickle","rb"))
+plot_3D_mds_array(mds_model_3D)
+
+
+# sse_values = kmedoids_SSE_plot(distance_mat, min_clusters = 2, max_clusters = 500, step = 1)
+# import plotly.express as px 
+# fig = px.line(x=range(0, len(sse_values)), y=sse_values )
+# fig.show()
+clustering_model = distance_matrix_kmedoids_clustering(distance_mat, nclusters = 40)
+
+plot_2D_mds_array(mds_model_2D, c = clustering_model.labels_, s = 5)
+plot_3D_mds_array(mds_model_3D, c = clustering_model.labels_, s = 5)
+
+
+
+# # # Store sub-dataframes and rules frequencies for each cluster
 clusters_data = create_sub_dfs_from_clusters(sample_df, clustering_model)
-############################################### Learning Phase (END) ##################################################
+
+print_cluster_rule_frequencies(clusters_data, clustering_model)
+############################################### Learning Phase & Visualization (END) ##################################################
+
+for i_cluster in range(-1, max(clustering_model.labels_) + 1 ):
+    print("CLUSTER: " + str(i_cluster) + " RULES:")
+    for point in np.where(clustering_model.labels_ == i_cluster)[0]:
+        print(sample_df.iloc[point]["Rule"])
+    print("-----------------------------------------------")

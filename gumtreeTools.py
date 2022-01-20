@@ -106,6 +106,55 @@ def txt_gummtree_actions_tokenizer(txt_actions_list):
         return ["no-action"]
     return update_process_vector
 
+
+def txt_gummtree_actions_tokenizer_srcml_tokens(txt_actions_list):
+    '''
+    Gets as input a list of gumtree diff actions in textual form and "translates"
+    all the actions to a list of tokens.
+    '''
+
+    srcml_tokens = [
+        "annotation",  "annotation_defn",  "assert", "block",  "block_content",  "break", "call", "case", 
+        "catch", "class", "comment", "condition", "constructor", "continue",  "control", 
+        "decl",  "decl_stmt", "default", "do", "else",  "empty_stmt",  "enum",  
+        "expr",  "expr_stmt",  "extends", "finally", "for", "function", "function_decl", "if",  
+        "if_stmt",  "implements",  "import", "incr",  "index",  "init",  "interface",  
+        "interface_decl", "label",  "lambda", "literal", "modifier",  "name",  "operator",  
+        "package",  "parameter_list", "private",  "protected",  "public",  
+        "range", "return", "specifier",  "static", "super_list",  "switch",  
+        "synchronized", "ternary",  "then",  "throw",  "throws",  "try",  "type",  
+        "unchecked",  "union",  "union_decl", "while"]
+
+    # The list where all the tokens will be stored.
+    update_process_vector = []
+    
+    # If the list of txt actions is empty, then we return a default list of tokens.
+    if not txt_actions_list:
+        return ["no-action"]
+    
+    for action in txt_actions_list:
+
+        # Split lines of the text of each action.
+        action_terms = action.splitlines()
+
+        # for action operations we ignore if they are apllied to tree or nodes.
+        action_operation = action_terms[0].split("-")[0] # ignore -node and -tree
+        update_process_vector.append(action_operation)
+
+        # loop through the other part of the action (Except operation)
+        for line in action_terms[2:]:
+
+            words = line.split(" ")
+            for word_index, word in enumerate(words):
+                
+                if word in srcml_tokens:
+                    update_process_vector.append(word)
+
+    if not txt_actions_list:
+        return ["no-action"]
+    return update_process_vector
+    
+
 def executeGumtree(gumtree_mode, tree_generator, output_format, code_file_1, code_file_2, output_file ):
     
     # Constructing gumtree execution command
