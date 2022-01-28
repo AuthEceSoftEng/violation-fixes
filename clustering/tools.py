@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 from pmdTools import get_column_val_frequencies
 
-def create_sub_dfs_from_clusters(initial_df, clustering_model):
+def clusters_sub_dfs_and_data(initial_df, clustering_model):
     '''
     Receives as input the initial dataframe and the clustering model, and returns
     a list (lets assume it as subdf_list) of dictionaries where:

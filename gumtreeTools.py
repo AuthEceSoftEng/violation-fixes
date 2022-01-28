@@ -146,11 +146,17 @@ def txt_gummtree_actions_tokenizer_srcml_tokens(txt_actions_list):
 
             words = line.split(" ")
             for word_index, word in enumerate(words):
-                
-                if word in srcml_tokens:
+                # avoid empty words and if a word follows replace, is duplicate,
+                # as it is part on action description, so it is skipped.
+                if len(word) <= 0 or words[word_index - 1]== "replace":
+                    continue
+                elif word in srcml_tokens:
                     update_process_vector.append(word)
-
-    if not txt_actions_list:
+                # for words ending with :, : is skipped (e.g. for "tree:", "tree" is stored )
+                elif word[-1] == ":" and word[:-1] in srcml_tokens:
+                    update_process_vector.append(word[:-1])
+                    
+    if not update_process_vector:
         return ["no-action"]
     return update_process_vector
     

@@ -5,6 +5,24 @@ Usefull functions for visualizing data and/or clusters.
 from sklearn.neighbors import NearestNeighbors
 import matplotlib.pyplot as plt
 import numpy as np
+import plotly.express as px
+
+def metric_w_knee_plot(numbers_of_clusters, metric_vals, knee_val,\
+     title = "Metric/ Number of Clusters (Kmedoids)",x_label = 'Number of Clusters',
+     y_label="Metric", legend = ["",""]  ):
+    
+    fig, ax = plt.subplots(figsize=(8, 6), dpi=240)
+    plt.plot(numbers_of_clusters, metric_vals, color='blue')
+    plt.axvline(x=knee_val, linestyle="--", color='red')
+    plt.xlabel(x_label, fontsize=15)
+    plt.ylabel(y_label, fontsize=15)
+    plt.title(title, fontsize=15)
+    plt.legend(legend)
+    plt.grid()
+    plt.show()
+
+
+
 
 def knns_distance_plot(input_X, k =15, metric="precomputed", plot = True):
     
@@ -13,6 +31,7 @@ def knns_distance_plot(input_X, k =15, metric="precomputed", plot = True):
     distances, indices = nbrs.kneighbors(input_X)
     distance_asc= sorted(distances[:,-1])
     if plot:
+        fig, ax = plt.subplots(figsize=(8, 6), dpi=240)
         plt.plot(list(range(len(distance_asc))), distance_asc)
         plt.ylabel(str(k) + '-NN distance', fontsize=15)
         plt.xlabel('Points sorted by distance', fontsize=15)

@@ -56,7 +56,7 @@ def gumtree_tokens_post_proces(tokens, stem = True, removestopwords = True, spli
     2) make all words lowercase
     3) removing stopwords from nltk corpus english stopwords.
     4) stemming the words.
-
+    
     '''
     if splitcamelcase:
         tokens = [camel_case_split(t) for t in tokens]
@@ -91,25 +91,24 @@ def violations_df_gumtree_actions_tokenizer(parsed_violations_df, violation_ID_c
     # violation with ID equals to violations_IDs[i]
     update_scripts_tokens = []
     violations_IDs = []
-    gumtree_actions_tokens_raw = []
+    actions_vector= []
 
     for row_index , row in parsed_violations_df.iterrows():
         
         update_actions = get_actions_from_gumtree_txt_diff(row)
 
+        actions_vector.append(update_actions)
+
+        # gumtree_actions_tokens = txt_gummtree_actions_tokenizer(update_actions)
+        gumtree_actions_tokens = txt_gummtree_actions_tokenizer_srcml_tokens(update_actions)
+
         
 
-        gumtree_actions_tokens = txt_gummtree_actions_tokenizer(update_actions)
-        # gumtree_actions_tokens = txt_gummtree_actions_tokenizer_srcml_tokens(update_actions)
-
-        gumtree_actions_tokens_raw.append(gumtree_actions_tokens)
-
-        # gumtree_actions_tokens = gumtree_tokens_post_proces(gumtree_actions_tokens)
 
         update_scripts_tokens.append(gumtree_actions_tokens)
         violations_IDs.append(row[violation_ID_col])
 
-    return update_scripts_tokens,gumtree_actions_tokens_raw, violations_IDs
+    return update_scripts_tokens, actions_vector, violations_IDs
 
 
 def tfidfVectorizer_for_tokenized_data(analyzer= 'word', max_df = 1.0, min_df = 1, max_features = None,\
@@ -195,28 +194,29 @@ def distance_matrix_from_tf_matrix(tf_matrix):
 ############ Functionality for computing longest common subsequence (START) ########
 # Function to find the length of the longest common subsequence of substring
 # `X[0…m-1]` and `Y[0…n-1]`
+## Source: https://www.techiedelight.com/longest-common-subsequence/
 def LCSLength(X, Y):
  
     m = len(X)
     n = len(Y)
  
     # lookup table stores solution to already computed subproblems;
-    # i.e., `T[i][j]` stores the length of LCS of substring
+    # i.e., `C[i][j]` stores the length of LCS of substring
     # `X[0…i-1]` and `Y[0…j-1]`
-    T = [[0 for x in range(n + 1)] for y in range(m + 1)]
+    C = [[0 for x in range(n + 1)] for y in range(m + 1)]
  
     # fill the lookup table in a bottom-up manner
     for i in range(1, m + 1):
         for j in range(1, n + 1):
             # if the current character of `X` and `Y` matches
             if X[i - 1] == Y[j - 1]:
-                T[i][j] = T[i - 1][j - 1] + 1
+                C[i][j] = C[i - 1][j - 1] + 1
             # otherwise, if the current character of `X` and `Y` don't match
             else:
-                T[i][j] = max(T[i - 1][j], T[i][j - 1])
+                C[i][j] = max(C[i - 1][j], C[i][j - 1])
  
     # LCS will be the last entry in the lookup table
-    return T[m][n]
+    return C[m][n]
 
 
 def lcs_similarities(vectors_of_action_tokens):
