@@ -94,7 +94,7 @@ from clustering.preprocessing import delete_rows_based_on_col_frequency, violati
     tfidfVectorizer_for_tokenized_data, countVectorizer_tokenized_data, distance_matrix_from_0_to_1_sim_matrix
 from clustering.kmeans import kmeans_SSE_plot
 from clustering.kmedoids import kmedoids_inertia_values_calculate, distance_matrix_kmedoids_clustering, kmedoids_purity_plot
-from clustering.tools import clusters_sub_dfs_and_data, print_cluster_rule_frequencies
+from clustering.tools import clusters_sub_dfs_and_data, print_cluster_rule_frequencies, print_cluster_rule_frequencies_and_stats
 from sklearn.cluster import KMeans
 from clustering.dbscan import DBSCAN_execution
 from clustering.visualize import mds_def_precomputed_execution, plot_2D_mds_array, plot_3D_mds_array, knns_distance_plot,\
@@ -165,16 +165,13 @@ clustering_model = distance_matrix_kmedoids_clustering(distance_mat, nclusters =
 
 plot_2D_mds_array(mds_model_2D, c=clustering_model.labels_, s=5)
 plot_3D_mds_array(mds_model_3D, c=clustering_model.labels_, s=2)
-#### K-MEDOIDS experiment (START) ####
+
 # clustering_model = DBSCAN_execution(distance_mat, eps=0.08, min_samples=15, metric='precomputed')
-
-
-
 
 # # # Store sub-dataframes and rules frequencies for each cluster
 clusters_data = clusters_sub_dfs_and_data(sample_df, clustering_model)
-
-print_cluster_rule_frequencies(clusters_data, clustering_model)
+print_cluster_rule_frequencies_and_stats(clusters_data, clustering_model)
+#### K-MEDOIDS experiment (END) ####
 ############################################### Learning Phase & Visualization (END) ##################################################
 
 for i_cluster in range(-1, max(clustering_model.labels_) + 1):
