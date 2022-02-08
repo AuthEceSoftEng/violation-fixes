@@ -96,9 +96,9 @@ from clustering.kmeans import kmeans_SSE_plot
 from clustering.kmedoids import kmedoids_inertia_values_calculate, distance_matrix_kmedoids_clustering, kmedoids_purity_plot
 from clustering.tools import clusters_sub_dfs_and_data, print_cluster_rule_frequencies, print_cluster_rule_frequencies_and_stats
 from sklearn.cluster import KMeans
-from clustering.dbscan import DBSCAN_execution
+from clustering.dbscan import DBSCAN_execution, dbscan_purity_plot
 from clustering.visualize import mds_def_precomputed_execution, plot_2D_mds_array, plot_3D_mds_array, knns_distance_plot,\
-    metric_w_knee_plot
+    metric_w_vertical_line_plot
 # # Save in order to examine
 # sample_df.to_csv("sample_df.csv")
 #sample_df = pd.read_csv(path_to_results_stats + "parsed_violations_clean.csv")
@@ -136,35 +136,45 @@ knns_distance_plot(distance_mat, k=15, metric="precomputed", plot=True)
 # mds_model_2D = mds_def_precomputed_execution(distance_mat, n_dimensions=2, random_state=1, n_jobs=-1)
 # pickle.dump(mds_model_2D, open("pickles/MDS_2D_MDS_from_distance_matrix_JAVA_SRCMLtokens.pickle", "wb"))
 mds_model_2D = pickle.load(open("pickles/MDS_2D_MDS_from_distance_matrix_JAVA_SRCMLtokens.pickle","rb"))
-plot_2D_mds_array(mds_model_2D, s=5)
+plot_2D_mds_array(mds_model_2D, s=3)
 
 # 3D MDS Represantation of data
 # mds_model_3D = mds_def_precomputed_execution(distance_mat, n_dimensions=3, random_state=1, n_jobs=-1)
 # pickle.dump(mds_model_3D, open("pickles/MDS_3D_MDS_from_distance_matrix_JAVA_SRCMLtokens.pickle", "wb"))
 mds_model_3D = pickle.load(open("pickles/MDS_3D_MDS_from_distance_matrix_JAVA_SRCMLtokens.pickle","rb"))
-plot_3D_mds_array(mds_model_3D, s=5)
+plot_3D_mds_array(mds_model_3D, s=1)
+
 
 #### K-MEDOIDS experiment (START) ####
 # Get k-medoids inertia plot
 n_of_clusters, sae_values = kmedoids_inertia_values_calculate(distance_mat, min_clusters=2, max_clusters=500, step=1)
 
-# purity_values = kmedoids_purity_plot(distance_mat, sample_df, min_clusters = 2, max_clusters = 500)
-# pickle.dump(purity_values, open("pickles/purity_values_2_to_500_JAVA_SRCMLtokens.pickle", "wb"))
-purity_values = pickle.load(open("pickles/purity_values_kmedoids_2_to_500_JAVA_SRCMLtokens.pickle","rb"))
+
 
 # Find and print knee of kmedoids inertia plot.
 kneedle = KneeLocator(n_of_clusters, sae_values, S=1.0, curve="convex", direction="decreasing")  
 print("The knee of the K on k-medoids in SAE plot is:" + str(list(kneedle.all_knees)[0]))
 
 # Plotting kmedoids inertia values for different K along with the knee value
-metric_w_knee_plot(n_of_clusters, sae_values, list(kneedle.all_knees)[0], title = "SAE / Number of Clusters (Kmedoids)",
+metric_w_vertical_line_plot(n_of_clusters, sae_values, list(kneedle.all_knees)[0], title = "SAE / Number of Clusters (Kmedoids)",
     x_label = 'Number of Clusters (K)', y_label="SAE",\
     legend = ["SAE","knee/elbow (at K="+ str(list(kneedle.all_knees)[0])+ ")" ]  )
 
+# purity_values = kmedoids_purity_plot(distance_mat, sample_df, min_clusters = 2, max_clusters = 500)
+# pickle.dump(purity_values, open("pickles/purity_values_2_to_500_JAVA_SRCMLtokens.pickle", "wb"))
+purity_values = pickle.load(open("pickles/purity_values_kmedoids_2_to_500_JAVA_SRCMLtokens.pickle","rb"))
+# Plotting kmedoids Purity values for different K along with the knee value
+metric_w_vertical_line_plot(n_of_clusters, purity_values, list(kneedle.all_knees)[0], title = "Purity / Number of Clusters (Kmedoids)",
+    x_label = 'Number of Clusters (K)', y_label="Purity",\
+    legend = ["Purity","K="+ str(list(kneedle.all_knees)[0]) ]  )
+
+
 clustering_model = distance_matrix_kmedoids_clustering(distance_mat, nclusters = list(kneedle.all_knees)[0], random_state= 1)
 
-plot_2D_mds_array(mds_model_2D, c=clustering_model.labels_, s=5)
-plot_3D_mds_array(mds_model_3D, c=clustering_model.labels_, s=2)
+
+
+plot_2D_mds_array(mds_model_2D, c=clustering_model.labels_, s=3, cmap= "gist_ncar")
+plot_3D_mds_array(mds_model_3D, c=clustering_model.labels_, s=1, cmap= "gist_ncar")
 
 # clustering_model = DBSCAN_execution(distance_mat, eps=0.08, min_samples=15, metric='precomputed')
 
@@ -172,6 +182,29 @@ plot_3D_mds_array(mds_model_3D, c=clustering_model.labels_, s=2)
 clusters_data = clusters_sub_dfs_and_data(sample_df, clustering_model)
 print_cluster_rule_frequencies_and_stats(clusters_data, clustering_model)
 #### K-MEDOIDS experiment (END) ####
+
+#### DBSCAN experiment (START) ####
+# Get dbscan purity/eps plot
+eps_vals, purity_vals = dbscan_purity_plot(distance_mat, sample_df, min_eps = 0.01,max_eps=0.5,step = 0.01,min_samples=15)
+
+metric_w_vertical_line_plot(eps_vals, purity_vals,eps_vals[purity_vals.index(max(purity_vals))],\
+    title = "Purity / Epsilon (DBSCAN)", x_label = 'Epsilon (eps)', y_label="Purity",\
+    legend = ["Purity","max (at eps="+ str(eps_vals[purity_vals.index(max(purity_vals))])+ ")" ]  )
+
+exec_eps_val = eps_vals[purity_vals.index(max(purity_vals))] # = 0.08
+
+print("Max purity value is: " + str(max(purity_vals)))
+
+clustering_model = DBSCAN_execution(distance_mat, eps=exec_eps_val, min_samples=15, metric='precomputed')
+
+
+plot_2D_mds_array(mds_model_2D, c=clustering_model.labels_, s=3, cmap= "gist_ncar")
+plot_3D_mds_array(mds_model_3D, c=clustering_model.labels_, s=1, cmap= "gist_ncar")
+
+# # # Store sub-dataframes and rules frequencies for each cluster
+clusters_data = clusters_sub_dfs_and_data(sample_df, clustering_model)
+print_cluster_rule_frequencies_and_stats(clusters_data, clustering_model)
+#### DBSCAN experiment (END) ####
 ############################################### Learning Phase & Visualization (END) ##################################################
 
 for i_cluster in range(-1, max(clustering_model.labels_) + 1):

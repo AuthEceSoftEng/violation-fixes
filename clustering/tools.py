@@ -109,6 +109,22 @@ def print_cluster_rule_frequencies_and_stats(cluster_info, clustering_model):
         print("--------------------------------------")
         print("--------------------------------------")
 
+def print_clusters_data_for_latex(cluster_info, clustering_model):
+       # This if statements, is added for clustering models, where n_clusters attribute is absent.
+    # (e.g. for sklearn's DBSCAN model)
+    if hasattr(clustering_model, "n_clusters"):
+        n_clusters = clustering_model.n_clusters
+    else: 
+        n_clusters =  max(clustering_model.labels_) + 1
+
+    for cluster in range(n_clusters):
+        # 1 & \tl{AvoidPrintStackTrace} & \tl{123} & \tl{0.89} & \tl{2} & \tl{2} \\ 
+        # \hline
+        print( str(cluster) + " & \\tl{" + cluster_info[cluster]['rules-freq'][0][0] + " }" +\
+                " & " + str(cluster_info[cluster]['rules-freq'][0][1]) + " & " + str(round(cluster_info[cluster]['purity'],2)) +\
+                " & " + str(len(cluster_info[cluster]['commits'])) + "&" + str(len(cluster_info[cluster]['repos'])) + "\\\\")
+        print("\\hline")
+
 
 # # Check cluster's, input update script and rules.
 # # cluster = 2
