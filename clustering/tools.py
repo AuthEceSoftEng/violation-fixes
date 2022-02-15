@@ -1,9 +1,12 @@
 import pandas as pd
 import numpy as np
 from pmdTools import get_column_val_frequencies
-import collections
 
 def repos_from_commit_urls(commit_urls_list):
+    '''
+    Gets a list of commits' urls and returns a list with all the individual
+    repositories names (in format username/reponame) the commits come from.
+    '''
     repos_list =[]
     
     for url in commit_urls_list:
@@ -18,7 +21,11 @@ def repos_from_commit_urls(commit_urls_list):
     return repos_list
 
 def cluster_calc_purity(rules_freq, cluster_df):
-    '''Function for calculating the purity metric of a cluster.'''
+    '''
+    Function for calculating the purity metric of a cluster.
+    Gets as input the rule frequencies in cluster and the cluster's dataframe,
+    as extracted from clusters_sub_dfs_and_data(...) function.
+    '''
     purity = rules_freq[0][1]/ len(cluster_df)
 
     return purity
@@ -75,7 +82,14 @@ def clusters_sub_dfs_and_data(initial_df, clustering_model):
     return clusters_dataframes
 
 def print_cluster_rule_frequencies(cluster_info, clustering_model):
-       # This if statements, is added for clustering models, where n_clusters attribute is absent.
+    '''
+    Prints the rule frequencies, as extracted from clusters_sub_dfs_and_data(...)
+    function.
+
+    param cluster_info: The clusters' data as extracted from clusters_sub_dfs_and_data(...).
+    param clustering_model: The clustering model with which the clusters occured.
+    '''
+    # This if statements, is added for clustering models, where n_clusters attribute is absent.
     # (e.g. for sklearn's DBSCAN model)
     if hasattr(clustering_model, "n_clusters"):
         n_clusters = clustering_model.n_clusters
@@ -89,7 +103,14 @@ def print_cluster_rule_frequencies(cluster_info, clustering_model):
         print("--------------------------------------")
 
 def print_cluster_rule_frequencies_and_stats(cluster_info, clustering_model):
-       # This if statements, is added for clustering models, where n_clusters attribute is absent.
+    '''
+    Prints the rule frequencies and the stats, as extracted from clusters_sub_dfs_and_data 
+    function.
+
+    param cluster_info: The clusters' data as extracted from clusters_sub_dfs_and_data.
+    param clustering_model: The clustering model with which the clusters occured.
+    '''
+    # This if statements, is added for clustering models, where n_clusters attribute is absent.
     # (e.g. for sklearn's DBSCAN model)
     if hasattr(clustering_model, "n_clusters"):
         n_clusters = clustering_model.n_clusters
@@ -110,7 +131,14 @@ def print_cluster_rule_frequencies_and_stats(cluster_info, clustering_model):
         print("--------------------------------------")
 
 def print_clusters_data_for_latex(cluster_info, clustering_model):
-       # This if statements, is added for clustering models, where n_clusters attribute is absent.
+    '''
+    Prints the rule frequencies and the stats, as extracted from clusters_sub_dfs_and_data 
+    function. The printed format, is usefull for be imported on a latex table.
+
+    param cluster_info: The clusters' data as extracted from clusters_sub_dfs_and_data.
+    param clustering_model: The clustering model with which the clusters occured.
+    '''
+    # This if statements, is added for clustering models, where n_clusters attribute is absent.
     # (e.g. for sklearn's DBSCAN model)
     if hasattr(clustering_model, "n_clusters"):
         n_clusters = clustering_model.n_clusters

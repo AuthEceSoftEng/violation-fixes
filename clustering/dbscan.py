@@ -1,6 +1,4 @@
-##### # # # # # # # # # # # # # # # #
 from sklearn.cluster import DBSCAN
-from clustering.preprocessing import distance_matrix_from_0_to_1_sim_matrix
 import numpy as np
 from clustering.evaluation import compute_purity_from_cData
 from clustering.tools import clusters_sub_dfs_and_data
@@ -9,17 +7,16 @@ import matplotlib.pyplot as plt
 def DBSCAN_execution(input_X, eps=0.1, min_samples=15, metric='precomputed', metric_params=None,\
      algorithm='auto', leaf_size=30, p=None, n_jobs=None):
 
-    # import plotly.express as px
     clustering_model_dbscan = DBSCAN(eps=eps, min_samples=min_samples, metric=metric, metric_params=metric_params,\
         algorithm = algorithm, leaf_size=leaf_size, p = p, n_jobs = n_jobs  ).fit(input_X)
 
     return clustering_model_dbscan
 
 # External Evaluation
-def dbscan_purity_plot(input_X, input_df, min_eps = 0.1,max_eps=0.2,step = 0.01,min_samples=15,\
+def dbscan_purity_plot(input_X, input_df, min_eps = 0.1, max_eps=0.2,step = 0.01,min_samples=15,\
    metric='precomputed', metric_params=None, algorithm='auto', leaf_size=30, p=None, n_jobs=None):
     '''
-    Executes kmedoids for k from min_clusters to max_clusters with a certain step (step), and
+    Executes DBSAN for eps from min_eps to max_eps with a certain step (step), and
     plots the purity plot.
     '''
     purity_values = []
@@ -43,6 +40,8 @@ def dbscan_purity_plot(input_X, input_df, min_eps = 0.1,max_eps=0.2,step = 0.01,
     plt.show()
 
     return eps_values, purity_values
+
+    
 # # Print DBSCAN clusters' rules
 # for i_cluster in range(-1, max(clustering_model_dbscan.labels_) + 1 ):
 #     print("CLUSTER: " + str(i_cluster) + " RULES:")

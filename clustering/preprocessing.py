@@ -1,8 +1,7 @@
 '''
-Functions for Data Preprocessing & Preparation 
-Before Applying learning algorithms
+Functions for Data Preprocessing & Preparation before clustering experiments
+get conducted.
 '''
-
 from pmdTools import get_column_val_frequencies
 from gumtreeTools import get_actions_from_gumtree_txt_diff, txt_gummtree_actions_tokenizer, txt_gummtree_actions_tokenizer_srcml_tokens
 from sklearn.cluster import AgglomerativeClustering
@@ -39,41 +38,7 @@ def delete_rows_based_on_col_frequency(df, column_name, minimun_frequency):
         df = df[df[column_name] != col_value]
 
     return df
-
-
-def camel_case_split(identifier):
-    '''
-    Splits camel case, it returns the parts of the initialy camel case.
-    '''
-    matches = re.finditer('.+?(?:(?<=[a-z])(?=[A-Z])|(?<=[A-Z])(?=[A-Z][a-z])|$)', identifier)
-    return [m.group(0).lower() for m in matches]
-
-def gumtree_tokens_post_proces(tokens, stem = True, removestopwords = True, splitcamelcase = True, lowercase = True):
-    '''
-    Processing tokens from gumtree actions, before serve as input for tf-idf model. Returns the processed tokens.
-    The processing contains:
-    1) split of camel case
-    2) make all words lowercase
-    3) removing stopwords from nltk corpus english stopwords.
-    4) stemming the words.
-    
-    '''
-    if splitcamelcase:
-        tokens = [camel_case_split(t) for t in tokens]
-        tokens = [item for sublist in tokens for item in sublist]
-
-    if lowercase:
-        tokens = [t.lower() for t in tokens]
-            
-    if removestopwords:
-        tokens = [t for t in tokens if t not in stopwords.words('english')]
-
-    if stem:
-        stemmer = PorterStemmer()
-        tokens = [stemmer.stem(t) for t in tokens]
-
-    return tokens
-    
+   
 
 def violations_df_gumtree_actions_tokenizer(parsed_violations_df, violation_ID_col):
     '''
@@ -102,14 +67,121 @@ def violations_df_gumtree_actions_tokenizer(parsed_violations_df, violation_ID_c
         # gumtree_actions_tokens = txt_gummtree_actions_tokenizer(update_actions)
         gumtree_actions_tokens = txt_gummtree_actions_tokenizer_srcml_tokens(update_actions)
 
-        
-
-
         update_scripts_tokens.append(gumtree_actions_tokens)
         violations_IDs.append(row[violation_ID_col])
 
     return update_scripts_tokens, actions_vector, violations_IDs
 
+
+def distance_matrix_from_0_to_1_sim_matrix(similarity_matrix_0_1):
+
+    # Get Distance Matrix from similarity matrix
+    distance_matrix = 1 - similarity_matrix_0_1
+
+    # Some times 0 float numbers are equal to a very small negative float number, so
+    # we make these values equal to 0.
+    np.clip(distance_matrix, 0, 1, distance_matrix)
+
+    # make diagonal equal to real zeros
+    np.fill_diagonal(distance_matrix, 0)
+    
+    return distance_matrix
+
+
+############ Functionality for computing longest common subsequence (START) ########
+# Function to find the length of the longest common subsequence of substring
+# `X[0…m-1]` and `Y[0…n-1]`
+## Source: https://www.techiedelight.com/longest-common-subsequence/
+def LCSLength(X, Y):
+ 
+    m = len(X)
+    n = len(Y)
+ 
+    # lookup table stores solution to already computed subproblems;
+    # i.e., `C[i][j]` stores the length of LCS of substring
+    # `X[0…i-1]` and `Y[0…j-1]`
+    C = [[0 for x in range(n + 1)] for y in range(m + 1)]
+ 
+    # fill the lookup table in a bottom-up manner
+    for i in range(1, m + 1):
+        for j in range(1, n + 1):
+            # if the current character of `X` and `Y` matches
+            if X[i - 1] == Y[j - 1]:
+                C[i][j] = C[i - 1][j - 1] + 1
+            # otherwise, if the current character of `X` and `Y` don't match
+            else:
+                C[i][j] = max(C[i - 1][j], C[i][j - 1])
+ 
+    # LCS will be the last entry in the lookup table
+    return C[m][n]
+
+
+def lcs_similarities(vectors_of_action_tokens):
+    '''
+    Receives as input a list of sequences (vectors) of tokens (that have to do with gumtree actions)
+    and returns a similarity matrix, based on the longest common subsequence (LCS) of two sequences.
+    '''
+
+    LCS_similarities = np.zeros((len(vectors_of_action_tokens),len(vectors_of_action_tokens)) )
+
+    for i in range(len(vectors_of_action_tokens)):
+        for j in range(i,len(vectors_of_action_tokens)):
+
+            seq_1 = vectors_of_action_tokens[i]
+            seq_2 = vectors_of_action_tokens[j]
+            
+            LCS_similarities[i,j] = (2 * LCSLength(seq_1, seq_2)  ) / (len(seq_1) + len(seq_2))
+            LCS_similarities[j,i] = LCS_similarities[i,j]
+
+       
+    return LCS_similarities
+############ Functionality for computing longest common subsequence (END) ##########
+
+############ Functionalisty for text clustering experiments (START) ################
+def distance_matrix_from_tf_matrix(tf_matrix):
+    '''
+    Receives as input a tf-idf matrix and returns the corresponding distance matrix,
+    calculated as 1 - cosine_similarity.
+    '''
+    # compute cosine similarity matrix for the tf_idf matrix of the violations' gumtree diffs
+    cosine_sim = cosine_similarity(tf_matrix, tf_matrix)
+
+    # ### Clustering
+    distance_matrix = distance_matrix_from_0_to_1_sim_matrix(cosine_sim)
+
+    return distance_matrix
+
+def camel_case_split(identifier):
+    '''
+    Splits camel case, it returns the words of the initial camel case.
+    '''
+    matches = re.finditer('.+?(?:(?<=[a-z])(?=[A-Z])|(?<=[A-Z])(?=[A-Z][a-z])|$)', identifier)
+    return [m.group(0).lower() for m in matches]
+
+def gumtree_tokens_post_proces(tokens):
+    '''
+    Processing tokens from gumtree actions, before serve as input for tf-idf model. Returns the processed tokens.
+    The processing contains:
+    1) split of camel case
+    2) make all words lowercase
+    3) removing stopwords from nltk corpus english stopwords.
+    4) stemming the words.
+    '''
+    #split of camel case
+    tokens = [camel_case_split(t) for t in tokens]
+    tokens = [item for sublist in tokens for item in sublist]
+
+    # make all words lowercase
+    tokens = [t.lower() for t in tokens]
+            
+    # removing stopwords from nltk corpus english stopwords.
+    tokens = [t for t in tokens if t not in stopwords.words('english')]
+
+    # stemming the words.
+    stemmer = PorterStemmer()
+    tokens = [stemmer.stem(t) for t in tokens]
+
+    return tokens
 
 def tfidfVectorizer_for_tokenized_data(analyzer= 'word', max_df = 1.0, min_df = 1, max_features = None,\
     norm = 'l2', use_idf = True, smooth_idf = True ):
@@ -163,75 +235,4 @@ def countVectorizer_tokenized_data(analyzer= 'word', max_df = 1.0, min_df = 1, m
         max_features = max_features)
 
     return vectorizer_model
-
-def distance_matrix_from_0_to_1_sim_matrix(similarity_matrix_0_1):
-
-    # Get Distance Matrix from similarity matrix
-    distance_matrix = 1 - similarity_matrix_0_1
-
-    # Some times 0 float numbers are equal to a very small negative float number, so
-    # we make these values equal to 0.
-    np.clip(distance_matrix, 0, 1, distance_matrix)
-
-    # make diagonal equal to real zeros
-    np.fill_diagonal(distance_matrix, 0)
-    
-    return distance_matrix
-
-def distance_matrix_from_tf_matrix(tf_matrix):
-    '''
-    Receives as input a tf-idf matrix and returns the corresponding distance matrix,
-    calculated as 1 - cosine_similarity.
-    '''
-    # compute cosine similarity matrix for the tf_idf matrix of the violations' gumtree diffs
-    cosine_sim = cosine_similarity(tf_matrix, tf_matrix)
-
-    # ### Clustering
-    distance_matrix = distance_matrix_from_0_to_1_sim_matrix(cosine_sim)
-
-    return distance_matrix
-
-############ Functionality for computing longest common subsequence (START) ########
-# Function to find the length of the longest common subsequence of substring
-# `X[0…m-1]` and `Y[0…n-1]`
-## Source: https://www.techiedelight.com/longest-common-subsequence/
-def LCSLength(X, Y):
- 
-    m = len(X)
-    n = len(Y)
- 
-    # lookup table stores solution to already computed subproblems;
-    # i.e., `C[i][j]` stores the length of LCS of substring
-    # `X[0…i-1]` and `Y[0…j-1]`
-    C = [[0 for x in range(n + 1)] for y in range(m + 1)]
- 
-    # fill the lookup table in a bottom-up manner
-    for i in range(1, m + 1):
-        for j in range(1, n + 1):
-            # if the current character of `X` and `Y` matches
-            if X[i - 1] == Y[j - 1]:
-                C[i][j] = C[i - 1][j - 1] + 1
-            # otherwise, if the current character of `X` and `Y` don't match
-            else:
-                C[i][j] = max(C[i - 1][j], C[i][j - 1])
- 
-    # LCS will be the last entry in the lookup table
-    return C[m][n]
-
-
-def lcs_similarities(vectors_of_action_tokens):
-
-    LCS_similarities = np.zeros((len(vectors_of_action_tokens),len(vectors_of_action_tokens)) )
-
-    for i in range(len(vectors_of_action_tokens)):
-        for j in range(i,len(vectors_of_action_tokens)):
-
-            seq_1 = vectors_of_action_tokens[i]
-            seq_2 = vectors_of_action_tokens[j]
-            
-            LCS_similarities[i,j] = (2 * LCSLength(seq_1, seq_2)  ) / (len(seq_1) + len(seq_2))
-            LCS_similarities[j,i] = LCS_similarities[i,j]
-
-       
-    return LCS_similarities
-############ Functionality for computing longest common subsequence (END) ##########
+############ Functionalisty for text clustering experiments (END) ################

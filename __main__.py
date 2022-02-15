@@ -91,11 +91,9 @@ from gumtreeTools import get_actions_from_gumtree_txt_diff, txt_gummtree_actions
 ############################################### Learning Phase & Visualization (START) ################################################
 import pickle
 from clustering.preprocessing import delete_rows_based_on_col_frequency, violations_df_gumtree_actions_tokenizer, lcs_similarities,\
-    tfidfVectorizer_for_tokenized_data, countVectorizer_tokenized_data, distance_matrix_from_0_to_1_sim_matrix
-from clustering.kmeans import kmeans_SSE_plot
+    distance_matrix_from_0_to_1_sim_matrix
 from clustering.kmedoids import kmedoids_inertia_values_calculate, distance_matrix_kmedoids_clustering, kmedoids_purity_plot
 from clustering.tools import clusters_sub_dfs_and_data, print_cluster_rule_frequencies, print_cluster_rule_frequencies_and_stats
-from sklearn.cluster import KMeans
 from clustering.dbscan import DBSCAN_execution, dbscan_purity_plot
 from clustering.visualize import mds_def_precomputed_execution, plot_2D_mds_array, plot_3D_mds_array, knns_distance_plot,\
     metric_w_vertical_line_plot
@@ -149,8 +147,6 @@ plot_3D_mds_array(mds_model_3D, s=1)
 # Get k-medoids inertia plot
 n_of_clusters, sae_values = kmedoids_inertia_values_calculate(distance_mat, min_clusters=2, max_clusters=500, step=1)
 
-
-
 # Find and print knee of kmedoids inertia plot.
 kneedle = KneeLocator(n_of_clusters, sae_values, S=1.0, curve="convex", direction="decreasing")  
 print("The knee of the K on k-medoids in SAE plot is:" + str(list(kneedle.all_knees)[0]))
@@ -159,6 +155,7 @@ print("The knee of the K on k-medoids in SAE plot is:" + str(list(kneedle.all_kn
 metric_w_vertical_line_plot(n_of_clusters, sae_values, list(kneedle.all_knees)[0], title = "SAE / Number of Clusters (Kmedoids)",
     x_label = 'Number of Clusters (K)', y_label="SAE",\
     legend = ["SAE","knee/elbow (at K="+ str(list(kneedle.all_knees)[0])+ ")" ]  )
+print("SAE value on kneedle: " + str(sae_values[n_of_clusters.index(list(kneedle.all_knees)[0])]))
 
 # purity_values = kmedoids_purity_plot(distance_mat, sample_df, min_clusters = 2, max_clusters = 500)
 # pickle.dump(purity_values, open("pickles/purity_values_2_to_500_JAVA_SRCMLtokens.pickle", "wb"))
@@ -167,11 +164,9 @@ purity_values = pickle.load(open("pickles/purity_values_kmedoids_2_to_500_JAVA_S
 metric_w_vertical_line_plot(n_of_clusters, purity_values, list(kneedle.all_knees)[0], title = "Purity / Number of Clusters (Kmedoids)",
     x_label = 'Number of Clusters (K)', y_label="Purity",\
     legend = ["Purity","K="+ str(list(kneedle.all_knees)[0]) ]  )
-
+print("Purity value on SAE kneedle: " + str(purity_values[n_of_clusters.index(list(kneedle.all_knees)[0])]))
 
 clustering_model = distance_matrix_kmedoids_clustering(distance_mat, nclusters = list(kneedle.all_knees)[0], random_state= 1)
-
-
 
 plot_2D_mds_array(mds_model_2D, c=clustering_model.labels_, s=3, cmap= "gist_ncar")
 plot_3D_mds_array(mds_model_3D, c=clustering_model.labels_, s=1, cmap= "gist_ncar")
@@ -207,6 +202,7 @@ print_cluster_rule_frequencies_and_stats(clusters_data, clustering_model)
 #### DBSCAN experiment (END) ####
 ############################################### Learning Phase & Visualization (END) ##################################################
 
+# Print Rule of clusters
 for i_cluster in range(-1, max(clustering_model.labels_) + 1):
     print("CLUSTER: " + str(i_cluster) + " RULES:")
     for point in np.where(clustering_model.labels_ == i_cluster)[0]:

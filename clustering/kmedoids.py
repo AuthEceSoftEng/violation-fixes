@@ -5,7 +5,6 @@ from clustering.evaluation import compute_purity_from_cData
 from clustering.tools import clusters_sub_dfs_and_data
 
 
-
 def distance_matrix_kmedoids_clustering(distance_matrix, nclusters = 40, metric="precomputed", init='k-medoids++',\
      method="alternate", max_iter = 300, random_state = 1):
     '''

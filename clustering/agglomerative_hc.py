@@ -29,10 +29,10 @@ def lcs_similarity_hca_clustering(vectors_of_action_tokens, nclusters = 40, link
     return clustering_model
 
 # External Evaluation
-def kmedoids_purity_plot(input_X, input_df, min_clusters = 2, max_clusters = 8, step = 1,\
+def ahc_purity_plot(input_X, input_df, min_clusters = 2, max_clusters = 8, step = 1,\
     affinity="precomputed", linkage = 'average', computeFullTree  = True, distanceThresshold = None):
     '''
-    Executes kmedoids for k from min_clusters to max_clusters with a certain step (step), and
+    Executes agglomerative HC for k from min_clusters to max_clusters with a certain step (step), and
     plots the purity plot.
     '''
     purity_values = []
