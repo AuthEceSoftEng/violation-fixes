@@ -2,6 +2,8 @@ import pandas as pd
 import os
 import subprocess
 
+from properties import srcml_executable
+
 # store_file function
 def store_string_to_file(filepath, string_to_be_written):
     ''' Stores certain sting to a file with given path.
@@ -67,7 +69,7 @@ def parse_and_store_lines_violation_detected(violation_df_row, linesOffest = 0, 
 
 def executeSrcML_code_to_srcml(input_file, output_file ):
 
-    command = "srcml " + input_file + " -o " + output_file + " -l Java"
+    command = srcml_executable + " " + input_file + " -o " + output_file + " -l Java"
 
     output_folder = os.path.dirname(output_file)
 

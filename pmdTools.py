@@ -5,6 +5,7 @@ import collections
 import xml.etree.ElementTree as ET
 from GHapiTools import diff_parsed
 
+from properties import pmd_executable
 
 def execute_PMD(path_to_analyze, report_file_path, rules, reportFormat,nThreads):
 
@@ -12,7 +13,7 @@ def execute_PMD(path_to_analyze, report_file_path, rules, reportFormat,nThreads)
     os.makedirs(os.path.dirname(report_file_path), exist_ok = True)
 
     # Command For Executing PMD
-    pmd_exec_command = "pmd -d " + path_to_analyze + " -f " + reportFormat + " -R " + rules + \
+    pmd_exec_command = pmd_executable + " -d " + path_to_analyze + " -f " + reportFormat + " -R " + rules + \
     " -reportfile "    + report_file_path + " -t " + str(nThreads)
        
     # Execute the Command

@@ -4,6 +4,9 @@ import json
 import subprocess
 import string
 
+from properties import gumtree_executable
+
+
 def get_actions_from_gumtree_json_diff(parsed_viol_row):
     '''
     Reveices as input a complete gumtree diff result in json form and it 
@@ -164,7 +167,7 @@ def txt_gummtree_actions_tokenizer_srcml_tokens(txt_actions_list):
 def executeGumtree(gumtree_mode, tree_generator, output_format, code_file_1, code_file_2, output_file ):
     
     # Constructing gumtree execution command
-    command = "gumtree " + gumtree_mode + " -g "+ tree_generator + " -f "+ output_format + " " + code_file_1 +\
+    command = gumtree_executable + " " + gumtree_mode + " -g "+ tree_generator + " -f "+ output_format + " " + code_file_1 +\
          " " + code_file_2 + " -o " + output_file 
 
     #Folder where output file will be stored.

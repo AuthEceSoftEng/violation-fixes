@@ -8,3 +8,10 @@ path_to_commits_data = "./data/commits/"
 
 # Where resolved violations' dataframe along with other results will be stored.
 path_to_results_stats = "./data/"
+
+# Executables' commands
+pmd_executable = "pmd"
+
+srcml_executable = "srcml"
+
+gumtree_executable = "gumtree"
