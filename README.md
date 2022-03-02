@@ -81,7 +81,7 @@ Our executions, conducted on a laptop computer with *Windows 10* operating syste
 ## Dataset
 The dataset, crafted for the purposes of this project, can be downloaded from [here](https://mega.nz/file/hUoBlYqS#-8tLc9dOjtj9EoCS5S0rZBw01_UPyVF1DWeceCGSAmY).
 
-The above link, contains a zip where the dataset's files are stored, **unzip** and **read README_EN.txt** for further information. 
+The above link, contains a zip where the dataset's files are stored, **unzip** and **read README_EN.txt** of the unzipped folder, for further information. 
 
 The dataset consists of 11365 fixes of bugs, detectable by 43 useful rules of static analysis tool *[PMD](https://pmd.github.io/)* (version 6.39.0) . For the collection of this dataset, proper commits were searched and their files downloaded from Github's Search  API and then certain fixes were isolated by executing *[PMD](https://pmd.github.io/)*.
 
