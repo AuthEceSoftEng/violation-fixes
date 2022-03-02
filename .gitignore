@@ -5,3 +5,4 @@ pmdFixesDownloader/__pycache__/
 __pycache__
 github_token.txt
 pickles/
+save_dataset/
