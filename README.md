@@ -83,7 +83,7 @@ The dataset, crafted for the purposes of this project, can be downloaded from [h
 
 The above link, contains a zip where the dataset's files are stored, **unzip** and **read README_EN.txt** for further information. 
 
-The dataset consists from 11365 fixes of bugs, detectable by 43 useful rules of static analysis tool *[PMD](https://pmd.github.io/)* (version 6.39.0) . For the collection of this dataset, proper commits were searched and their files downloaded from Github's Search  API and then certain fixes were isolated by executing *[PMD](https://pmd.github.io/)*.
+The dataset consists of 11365 fixes of bugs, detectable by 43 useful rules of static analysis tool *[PMD](https://pmd.github.io/)* (version 6.39.0) . For the collection of this dataset, proper commits were searched and their files downloaded from Github's Search  API and then certain fixes were isolated by executing *[PMD](https://pmd.github.io/)*.
 
 ## Execution
 In order to execute the full proccess described in this research, and recreate similar results*, you have to follow the steps bellow:
