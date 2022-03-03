@@ -89,7 +89,7 @@ The dataset consists of 11365 fixes of bugs, detectable by 43 useful rules of st
 In order to execute the full proccess described in this research, and recreate similar results*, you have to follow the steps bellow:
 1. Firstly, all the dependencies of [Dependencies](#dependencies) section, have to be installed.
 2. Paths for directories and executables, have to be provided in [*properties.py*](./properties.py) file.
-3. Paste your Github AUTH token in the beggining of [*github_token.txt*](./github_token.txt), file. 
+3. Paste your Github authentication token in the beggining of [*github_token.txt*](./github_token.txt), file. This token must be valid and is needed for accessing Github API resources, otherwise problems are created with the execution, due to the API's rate limits. 
 4. Execute the python script [*execute_full.py*](./execute_full.py) inside repo's directory, as shown bellow:
   
    `
